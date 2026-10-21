@@ -8,6 +8,8 @@ export default function ThreeField({ reduced }: { reduced: boolean }) {
 
   useEffect(() => {
     if (reduced) return;
+    // m4lik-os: WebGL field is desktop-only — coarse pointers get the CSS aurora treatment
+    if (window.matchMedia("(pointer: coarse), (max-width: 1023px), (prefers-reduced-motion: reduce)").matches) return;
     const canvas = canvasRef.current;
     const wrap = wrapRef.current;
     if (!canvas || !wrap) return;
@@ -15,7 +17,7 @@ export default function ThreeField({ reduced }: { reduced: boolean }) {
     let raf = 0;
     let disposed = false;
     const scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(0x06080b, FIELD_CONFIG.fogNear, FIELD_CONFIG.fogFar);
+    scene.fog = new THREE.Fog(0x05060a, FIELD_CONFIG.fogNear, FIELD_CONFIG.fogFar);
     const camera = new THREE.PerspectiveCamera(FIELD_CONFIG.camera.fov, 1, 0.1, 100);
     camera.position.set(...FIELD_CONFIG.camera.pos);
     camera.lookAt(0, 0, 0);
@@ -25,14 +27,14 @@ export default function ThreeField({ reduced }: { reduced: boolean }) {
       return;
     }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, FIELD_CONFIG.dprCap));
-    renderer.setClearColor(0x06080b, 1);
+    renderer.setClearColor(0x05060a, 1);
     const grid = new THREE.GridHelper(FIELD_CONFIG.gridSize, FIELD_CONFIG.gridDivisions, 0x1c232e, 0x141a23);
     (grid.material as THREE.Material & { opacity: number; transparent: boolean }).opacity = 0.55;
     (grid.material as THREE.Material & { transparent: boolean }).transparent = true;
     scene.add(grid);
     const nodeGeo = new THREE.SphereGeometry(0.09, 16, 16);
-    const nodeMat = new THREE.MeshStandardMaterial({ color: 0x00e5ff, emissive: 0x00e5ff, emissiveIntensity: 0.9, roughness: 0.4 });
-    const amberMat = new THREE.MeshStandardMaterial({ color: 0xffe81a, emissive: 0xffe81a, emissiveIntensity: 0.8, roughness: 0.4 });
+    const nodeMat = new THREE.MeshStandardMaterial({ color: 0x8b7cff, emissive: 0x8b7cff, emissiveIntensity: 0.9, roughness: 0.4 });
+    const amberMat = new THREE.MeshStandardMaterial({ color: 0xd9f99d, emissive: 0xd9f99d, emissiveIntensity: 0.8, roughness: 0.4 });
     const nodes: THREE.Mesh[] = [];
     const positions: THREE.Vector3[] = [];
     for (let i = 0; i < FIELD_CONFIG.nodeCount; i++) {
@@ -202,10 +204,12 @@ export default function ThreeField({ reduced }: { reduced: boolean }) {
     );
   }
   return (
-    <div ref={wrapRef} className="absolute inset-0 overflow-hidden bg-[#06080B]">
+    <div ref={wrapRef} className="absolute inset-0 overflow-hidden bg-[#05060A]">
       <canvas ref={canvasRef} className="h-full w-full" aria-hidden="true" />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-void via-transparent to-transparent opacity-90" />
       <div className="pointer-events-none absolute inset-0 opacity-[0.06]" style={{ backgroundImage: "linear-gradient(#1C232E 1px, transparent 1px), linear-gradient(90deg, #1C232E 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
+      {/* mobile fallback: if WebGL skipped (coarse pointer / narrow), this aurora is all that shows */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden"><div className="aurora-a" /><div className="aurora-b" /><div className="aurora-c" /></div>
     </div>
   );
 }

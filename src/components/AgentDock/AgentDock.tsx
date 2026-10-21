@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAgentChat } from '@/hooks/useAgentChat';
-import NovaEmblem from './NovaEmblem';
+import VantaEmblem from './VantaEmblem';
 
 export default function AgentDock({ enabled }: { enabled: boolean }) {
   const [open, setOpen] = useState(false);
@@ -44,14 +44,14 @@ export default function AgentDock({ enabled }: { enabled: boolean }) {
         {open && (
           <div
             role="dialog"
-            aria-label="NOVA — Malik's assistant"
+            aria-label="VANTA — Malik's assistant"
             aria-modal="false"
             className="pointer-events-auto w-[360px] max-w-[calc(100vw-32px)] sm:w-[380px] overflow-hidden rounded-[18px] border border-hairline-strong bg-panel shadow-[0_20px_60px_rgba(0,0,0,0.45)] flex flex-col max-h-[min(68dvh,520px)]"
           >
             <div className="flex items-center justify-between gap-2 border-b border-hairline px-3.5 py-3 bg-void/60">
               <div className="flex items-center gap-2 min-w-0">
                 <div className="min-w-0">
-                  <div className="font-mono text-[11px] tracking-[0.16em] text-paper">NOVA</div>
+                  <div className="font-mono text-[11px] tracking-[0.16em] text-paper">VANTA</div>
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
@@ -82,8 +82,8 @@ export default function AgentDock({ enabled }: { enabled: boolean }) {
                 ref={inputRef}
                 value={input}
                 onChange={e => setInput(e.target.value)}
-                placeholder="Ask NOVA about your next project…"
-                aria-label="Ask NOVA"
+                placeholder="Ask VANTA about your next project…"
+                aria-label="Ask VANTA"
                 className="flex-1 rounded-full border border-hairline bg-void px-4 py-2.5 font-body text-[13px] text-paper placeholder:text-mist/60 focus:outline-none focus:border-cyan/50 focus:ring-2 focus:ring-cyan/20"
                 autoComplete="off"
               />
@@ -98,7 +98,7 @@ export default function AgentDock({ enabled }: { enabled: boolean }) {
         {/* Big emblem splash when open */}
         {open && (
           <div className="pointer-events-none hidden sm:flex justify-center -mb-2 mr-2">
-            <NovaEmblem size={72} />
+            <VantaEmblem size={72} />
           </div>
         )}
 
@@ -107,11 +107,11 @@ export default function AgentDock({ enabled }: { enabled: boolean }) {
           onClick={() => setOpen(v => !v)}
           aria-expanded={open}
           aria-controls="agent-dock"
-          aria-label={open ? 'Close NOVA' : 'Open NOVA'}
+          aria-label={open ? 'Close VANTA' : 'Open VANTA'}
           className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-hairline-strong bg-panel px-3 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.35)] hover:border-cyan/30 transition-colors"
         >
-          {!open && <span className="grid place-items-center"><NovaEmblem size={28} /></span>}
-          <span className="font-mono text-[11px] font-semibold tracking-[0.16em] text-paper">{open ? 'CLOSE NOVA' : 'NOVA — ASK ME!'}</span>
+          {!open && <span className="grid place-items-center"><VantaEmblem size={28} /></span>}
+          <span className="font-mono text-[11px] font-semibold tracking-[0.16em] text-paper">{open ? 'CLOSE VANTA' : 'VANTA — ASK ME!'}</span>
         </button>
       </div>
 
