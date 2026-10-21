@@ -272,20 +272,20 @@ export default function App() {
         {wm.windows.filter((w) => w.open && !w.minimized).map((w) => (
           <section key={w.id}
             data-id={w.id}
-            className={`os-win os-window absolute z-${Math.min(w.z, 40)} ${wm.isMobile ? "os-window-mobile" : ""}`}
-            style={wm.isMobile ? undefined : {
-              left: 0, top: 0,
-              width: `min(${w.w}px, calc(100vw - 32px))`,
-              transform: `translate3d(${w.x ?? 0}px, ${w.y ?? 0}px, 0)`,
+            className={`os-win os-window absolute ${wm.isMobile ? "os-window-mobile" : ""}`}
+            style={{
+              ...(wm.isMobile ? {} : {
+                left: 0, top: 0,
+                width: `min(${w.w}px, calc(100vw - 32px))`,
+                transform: `translate3d(${w.x ?? 0}px, ${w.y ?? 0}px, 0)`,
+              }),
+              zIndex: w.z,
             }}
             aria-label={w.title}
             onPointerDown={() => wm.focusWindow(w.id)}
           >
             <div className="os-titlebar"
-              onPointerDown={(e) => wm.beginDrag(e, w.id)}
-              onPointerMove={wm.moveDrag}
-              onPointerUp={wm.endDrag}
-              onPointerCancel={wm.endDrag}>
+              onPointerDown={(e) => wm.beginDrag(e, w.id)}>
               <span className="truncate font-mono text-[13px] tracking-widest text-phosphor glow-phosphor-soft">{w.title}</span>
               <span className="flex items-center gap-1.5">
                 <button onClick={() => wm.minimizeWindow(w.id)} aria-label={`Minimize ${w.title}`} className="grid h-7 w-7 place-items-center rounded border border-hairline font-mono text-[12px] text-mist hover:text-paper hover:border-hairline-strong">_</button>
