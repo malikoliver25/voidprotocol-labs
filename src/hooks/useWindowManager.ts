@@ -13,18 +13,6 @@ export interface OsWindow {
   h: number;
 }
 
-interface DragState {
-  id: string;
-  offX: number;
-  offY: number;
-  moved: boolean;
-  lastX: number;
-  lastY: number;
-  raf: number;
-  onMove: (ev: PointerEvent) => void;
-  onUp: () => void;
-}
-
 const DRAG_THRESHOLD = 3;
 
 export function useWindowManager(windowDefs: Array<Pick<OsWindow, "id" | "title" | "icon">>) {
@@ -40,9 +28,9 @@ export function useWindowManager(windowDefs: Array<Pick<OsWindow, "id" | "title"
       h: 480,
     }))
   );
-  const zRef = useRef(10);
+
   const [isMobile, setIsMobile] = useState(false);
-  const dragRef = useRef<DragState | null>(null);
+  const dragRef = useRef<{ id: string; offX: number; offY: number; startX: number; startY: number; moved: boolean; raf: number; onMove: (ev: PointerEvent) => void; onUp: () => void } | null>(null);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -52,10 +40,9 @@ export function useWindowManager(windowDefs: Array<Pick<OsWindow, "id" | "title"
     return () => mq.removeEventListener("change", upd);
   }, []);
 
-  /* open with cascade position so windows never stack at (0,0) */
   const openWindow = useCallback((id: string) => {
     setWindows((ws) => {
-      const z = ++zRef.current;
+      const z = Math.max(...ws.map((w) => w.z), 10) + 1;
       const vw = window.innerWidth;
       const vh = window.innerHeight;
       return ws.map((w) => {
@@ -84,64 +71,49 @@ export function useWindowManager(windowDefs: Array<Pick<OsWindow, "id" | "title"
       const top = Math.max(...ws.filter((w) => w.open).map((w) => w.z), 0);
       const focused = ws.find((w) => w.id === id);
       if (!focused || focused.z === top) return ws;
-      const z = ++zRef.current;
-      return ws.map((w) => (w.id === id ? { ...w, z, minimized: false } : w));
+      return ws.map((w) => (w.id === id ? { ...w, z: top + 1, minimized: false } : w));
     });
   }, []);
 
-  /* desktop drag: window-level listeners, NO pointer capture —
-     pointerup stays on its target so ✕/_ clicks fire normally */
+  /* desktop drag — STATE-driven: every pointermove (rAF-throttled) commits
+     x/y to state so React re-renders with the position we just set.
+     No DOM-direct transforms, so re-renders can never snap the window back. */
   const beginDrag = useCallback(
     (e: React.PointerEvent, id: string) => {
       if (isMobile || e.button !== 0) return;
       const win = windows.find((w) => w.id === id);
       const el = (e.currentTarget as HTMLElement).closest(".os-win") as HTMLElement | null;
       if (!win || !el) return;
-      /* measure the REAL rendered position — heals any state/DOM mismatch */
       const rect = el.getBoundingClientRect();
-      const d: DragState = {
+      const d = {
         id,
         offX: e.clientX - rect.left,
         offY: e.clientY - rect.top,
+        startX: e.clientX,
+        startY: e.clientY,
         moved: false,
-        lastX: rect.left,
-        lastY: rect.top,
         raf: 0,
-        onMove: () => {},
+        onMove: (_ev: PointerEvent) => {},
         onUp: () => {},
       };
-      const clamp = (x: number, y: number) => ({
-        x: Math.max(-40, Math.min(window.innerWidth - 120, x)),
-        y: Math.max(0, Math.min(window.innerHeight - 80, y)),
-      });
       d.onMove = (ev: PointerEvent) => {
-        const cur = dragRef.current;
-        if (!cur || cur.id !== id) return;
+        if (!dragRef.current || dragRef.current.id !== id) return;
         const nx = ev.clientX - d.offX;
         const ny = ev.clientY - d.offY;
-        if (!cur.moved && Math.hypot(nx - cur.lastX, ny - cur.lastY) < DRAG_THRESHOLD) return;
-        cur.moved = true;
-        const p = clamp(nx, ny);
-        cur.lastX = p.x;
-        cur.lastY = p.y;
-        if (!cur.raf) {
-          cur.raf = requestAnimationFrame(() => {
-            cur.raf = 0;
-            const el2 = document.querySelector(`.os-win[data-id="${id}"]`) as HTMLElement | null;
-            if (el2) el2.style.transform = `translate3d(${cur.lastX}px, ${cur.lastY}px, 0)`;
-          });
-        }
+        if (!d.moved && Math.hypot(nx - (win.x ?? rect.left), ny - (win.y ?? rect.top)) < DRAG_THRESHOLD) return;
+        d.moved = true;
+        if (d.raf) return;
+        d.raf = requestAnimationFrame(() => {
+          d.raf = 0;
+          const x = Math.max(-40, Math.min(window.innerWidth - 120, nx));
+          const y = Math.max(0, Math.min(window.innerHeight - 80, ny));
+          setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, x, y } : w)));
+        });
       };
       d.onUp = () => {
-        const cur = dragRef.current;
         dragRef.current = null;
         window.removeEventListener("pointermove", d.onMove);
-        if (cur && cur.moved) {
-          /* commit tracked coords — not regex-scraped DOM */
-          setWindows((ws) =>
-            ws.map((w) => (w.id === id ? { ...w, x: cur.lastX, y: cur.lastY } : w))
-          );
-        }
+        if (d.raf) cancelAnimationFrame(d.raf);
       };
       dragRef.current = d;
       window.addEventListener("pointermove", d.onMove);
@@ -151,6 +123,24 @@ export function useWindowManager(windowDefs: Array<Pick<OsWindow, "id" | "title"
     [isMobile, windows, focusWindow]
   );
 
+  /* taskbar chip: restore if minimized, focus if behind, minimize only if front */
+  const activateWindow = useCallback((id: string) => {
+    setWindows((ws) => {
+      const target = ws.find((w) => w.id === id);
+      if (!target) return ws;
+      if (target.minimized) {
+        const z = Math.max(...ws.map((w) => w.z), 10) + 1;
+        return ws.map((w) => (w.id === id ? { ...w, minimized: false, z } : w));
+      }
+      const top = Math.max(...ws.filter((w) => w.open).map((w) => w.z), 0);
+      if (target.z !== top) {
+        const z = top + 1;
+        return ws.map((w) => (w.id === id ? { ...w, z } : w));
+      }
+      return ws.map((w) => (w.id === id ? { ...w, minimized: true } : w));
+    });
+  }, []);
+
   return {
     windows,
     isMobile,
@@ -158,6 +148,7 @@ export function useWindowManager(windowDefs: Array<Pick<OsWindow, "id" | "title"
     closeWindow,
     minimizeWindow,
     focusWindow,
+    activateWindow,
     beginDrag,
   };
 }

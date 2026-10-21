@@ -255,7 +255,9 @@ main > section.is-offscreen .animate-pulse::after,
   .os-window-mobile {
     position: fixed !important;
     inset: 0 !important;
-    z-index: 60 !important;
+    /* z-index NOT forced: only one window is visible at a time on mobile
+       (sheets cover the screen), and a forced z here would flatten the
+       window manager's focus order for taskbar activation. */
     width: 100% !important;
     height: 100% !important;
     max-width: none !important;

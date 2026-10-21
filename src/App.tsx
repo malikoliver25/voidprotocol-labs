@@ -147,11 +147,27 @@ function TransmissionContent() {
 
 function TrashContent() {
   return (
-    <div className="p-8 text-center font-mono text-[14px] leading-loose text-mist">
-      <p className="text-paper glow-phosphor-soft">TRASH.EXE</p>
-      <p className="mt-3">nothing deleted.</p>
-      <p>nothing forgotten.</p>
-      <p className="mt-3 text-mist">you found the easter egg. VANTA is proud of you. 🌘</p>
+    <div className="p-5 font-mono text-[13px] leading-relaxed text-mist">
+      <p className="text-paper glow-phosphor-soft">TRASH.EXE — 7 deleted files, 0 forgotten</p>
+      <p className="mt-1 text-[12px]">files removed in the v3.0 OS rebuild. view at your own nostalgia.</p>
+      <ul className="mt-4 space-y-2">
+        {[
+          ["Header.tsx", "old fixed nav — replaced by menu bar"],
+          ["AboutSection.tsx", "the 'Mercenary Profile' HUD — now ABOUT.EXE"],
+          ["ProjectCards.tsx", "reveal-card grid — now C:\\PROJECTS"],
+          ["SkillGrid.tsx", "level bars — now SKILLS.SYS"],
+          ["LogHistory.tsx", "cert feed — now SIGNAL.LOG"],
+          ["useTerminal.ts", "the interactive terminal — now the whole OS"],
+          ["hero-title", "'Infrastructure for intelligence that can't fail.'"],
+        ].map(([file, note]) => (
+          <li key={file} className="flex flex-col gap-0.5 border-b border-hairline/60 pb-2">
+            <span className="text-mist-soft">├── <span className="text-phosphor">{file}</span></span>
+            <span className="pl-6 text-mist text-[12px]">{note}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-4 text-mist">$ empty-trash <span className="text-mist/70">— permission denied. history stays.</span></p>
+      <p className="mt-2 text-mist">you found the easter egg. VANTA is proud of you. 🌘</p>
     </div>
   );
 }
@@ -312,7 +328,7 @@ export default function App() {
                 <button onClick={() => wm.closeWindow(w.id)} aria-label={`Close ${w.title}`} className="grid h-7 w-7 [min-height:0] place-items-center rounded border border-hairline font-mono text-[12px] text-mist hover:text-[#FF6B6B] hover:border-[#FF6B6B]/50">✕</button>
               </span>
             </div>
-            <div className="overflow-hidden" style={{ maxHeight: wm.isMobile ? undefined : `min(${winH(w.id)}px, calc(100dvh - 160px))` }}>
+            <div className="overflow-y-auto" style={{ maxHeight: wm.isMobile ? "calc(100dvh - 120px)" : `min(${winH(w.id)}px, calc(100dvh - 160px))` }}>
               {contentFor(w.id)}
             </div>
           </section>
@@ -327,9 +343,9 @@ export default function App() {
             <span className="font-mono text-[12px] text-mist">none running</span>
           )}
           {wm.windows.filter((w) => w.open).map((w) => (
-            <button key={w.id} onClick={() => (w.minimized ? wm.focusWindow(w.id) : wm.minimizeWindow(w.id))}
+            <button key={w.id} onClick={() => wm.activateWindow(w.id)}
               aria-pressed={w.minimized}
-              aria-label={`${w.minimized ? "Restore" : "Minimize"} ${w.title}`}
+              aria-label={`${w.minimized ? "Restore" : w.z === Math.max(...wm.windows.filter(x => x.open).map(x => x.z), 0) ? "Minimize" : "Focus"} ${w.title}`}
               className={`os-taskchip shrink-0 font-mono text-[12px] ${w.minimized ? "text-mist" : "text-phosphor"}`}>
               <span aria-hidden="true">{WINDOW_DEFS.find((d) => d.id === w.id)?.icon}</span>
               <span className="truncate">{w.title}</span>
