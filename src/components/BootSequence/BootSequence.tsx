@@ -36,6 +36,10 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
   const handleSkip = useCallback(() => triggerComplete(), [triggerComplete]);
 
   useEffect(() => {
+    rootRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" || e.key === " " || e.key === "Enter") {
         e.preventDefault();
@@ -64,8 +68,9 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
   return (
     <div
       ref={rootRef}
-      className={`fixed inset-0 z-[10000] flex items-center justify-center overflow-hidden bg-void px-4 py-6 sm:px-6 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${fading ? "opacity-0 scale-[0.985] blur-[2px] pointer-events-none" : "opacity-100 scale-100 blur-0"}`}
+      className={`fixed inset-0 z-[10000] flex items-center justify-center overflow-y-auto bg-void px-4 py-6 sm:px-6 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${fading ? "opacity-0 scale-[0.985] blur-[2px] pointer-events-none" : "opacity-100 scale-100 blur-0"}`}
       style={{ height: "100dvh" }}
+      tabIndex={-1}
       role="dialog"
       aria-label="System boot sequence"
       aria-modal="true"
@@ -140,7 +145,7 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
             <div className="mt-2 h-[4px] w-full overflow-hidden rounded-full bg-void border border-hairline" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} aria-label="Boot progress">
               <div className="h-full rounded-full bg-gradient-to-r from-cyan via-signal to-cyan transition-all duration-300 ease-out" style={{ width: `${progress}%`, boxShadow: progress > 4 ? "0 0 12px rgba(0,229,255,0.5)" : undefined }} aria-hidden="true" />
             </div>
-            <div className="mt-1.5 flex justify-between font-mono text-[9px] tracking-[0.12em] text-mist/40">
+            <div className="mt-1.5 flex justify-between font-mono text-[9px] tracking-[0.12em] text-mist/80">
               <span>ORCHESTRATION FIELD</span>
               <span>v3.0 • {visibleLines}/{BOOT_LINES.length}</span>
             </div>
@@ -163,7 +168,7 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
         </div>
 
         {/* caption */}
-        <p className="mt-4 text-center font-mono text-[10px] tracking-[0.12em] text-mist/30">
+        <p className="mt-4 text-center font-mono text-[10px] tracking-[0.12em] text-mist/80">
           Founding Backend / AI Engineer @ Triton Sentinel — Malik Oliver • Indianapolis → Chicago
         </p>
       </div>

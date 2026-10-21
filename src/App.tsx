@@ -151,7 +151,7 @@ function TrashContent() {
       <p className="text-paper glow-phosphor-soft">TRASH.EXE</p>
       <p className="mt-3">nothing deleted.</p>
       <p>nothing forgotten.</p>
-      <p className="mt-3 text-mist/60">you found the easter egg. VANTA is proud of you. 🌘</p>
+      <p className="mt-3 text-mist">you found the easter egg. VANTA is proud of you. 🌘</p>
     </div>
   );
 }
@@ -191,6 +191,22 @@ export default function App() {
       return () => { document.body.style.overflow = prev; };
     }
   }, [bootComplete]);
+
+  // move focus into a window when it opens or restores (keyboard users)
+  const openIds = wm.windows.filter((w) => w.open && !w.minimized).map((w) => w.id).join(",");
+  useEffect(() => {
+    const last = openIds.split(",").filter(Boolean).slice(-1)[0];
+    if (!last) return;
+    const el = document.querySelector<HTMLElement>(`.os-win[data-id="${last}"]`);
+    if (el && !el.contains(document.activeElement)) el.focus();
+  }, [openIds]);
+
+  // external open-window requests (e.g. VANTA's Transmission link)
+  useEffect(() => {
+    const h = (e: Event) => wm.openWindow((e as CustomEvent<string>).detail);
+    window.addEventListener("m4lik-open-window", h);
+    return () => window.removeEventListener("m4lik-open-window", h);
+  }, [wm.openWindow]);
 
   const clock = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
 
@@ -272,7 +288,11 @@ export default function App() {
         {wm.windows.filter((w) => w.open && !w.minimized).map((w) => (
           <section key={w.id}
             data-id={w.id}
-            className={`os-win os-window absolute ${wm.isMobile ? "os-window-mobile" : ""}`}
+            role="dialog"
+            aria-label={w.title}
+            tabIndex={-1}
+            ref={(el) => { if (el) el.dataset.winMounted = "1"; }}
+            className={`os-win os-window absolute outline-none ${wm.isMobile ? "os-window-mobile" : ""}`}
             style={{
               ...(wm.isMobile ? {} : {
                 left: 0, top: 0,
@@ -281,18 +301,18 @@ export default function App() {
               }),
               zIndex: w.z,
             }}
-            aria-label={w.title}
             onPointerDown={() => wm.focusWindow(w.id)}
+            onKeyDown={(e) => { if (e.key === "Escape") { wm.closeWindow(w.id); (document.activeElement as HTMLElement)?.blur?.(); } }}
           >
             <div className="os-titlebar"
               onPointerDown={(e) => wm.beginDrag(e, w.id)}>
               <span className="truncate font-mono text-[13px] tracking-widest text-phosphor glow-phosphor-soft">{w.title}</span>
               <span className="flex items-center gap-1.5">
-                <button onClick={() => wm.minimizeWindow(w.id)} aria-label={`Minimize ${w.title}`} className="grid h-7 w-7 place-items-center rounded border border-hairline font-mono text-[12px] text-mist hover:text-paper hover:border-hairline-strong">_</button>
-                <button onClick={() => wm.closeWindow(w.id)} aria-label={`Close ${w.title}`} className="grid h-7 w-7 place-items-center rounded border border-hairline font-mono text-[12px] text-mist hover:text-[#FF6B6B] hover:border-[#FF6B6B]/50">✕</button>
+                <button onClick={() => wm.minimizeWindow(w.id)} aria-label={`Minimize ${w.title}`} className="grid h-7 w-7 [min-height:0] place-items-center rounded border border-hairline font-mono text-[12px] text-mist hover:text-paper hover:border-hairline-strong">_</button>
+                <button onClick={() => wm.closeWindow(w.id)} aria-label={`Close ${w.title}`} className="grid h-7 w-7 [min-height:0] place-items-center rounded border border-hairline font-mono text-[12px] text-mist hover:text-[#FF6B6B] hover:border-[#FF6B6B]/50">✕</button>
               </span>
             </div>
-            <div className="max-h-[calc(100dvh-160px)] overflow-hidden" style={{ maxHeight: wm.isMobile ? undefined : winH(w.id) }}>
+            <div className="overflow-hidden" style={{ maxHeight: wm.isMobile ? undefined : `min(${winH(w.id)}px, calc(100dvh - 160px))` }}>
               {contentFor(w.id)}
             </div>
           </section>
@@ -302,12 +322,14 @@ export default function App() {
       {/* taskbar */}
       <footer className="os-pill fixed inset-x-0 bottom-0 z-50 border-x-0 border-b-0">
         <div className="mx-auto flex h-[56px] max-w-[1440px] items-center gap-2 overflow-x-auto px-3 sm:px-5">
-          <span className="shrink-0 font-mono text-[13px] text-phosphor glow-phosphor-soft">TASKS:</span>
+          <span className="hidden shrink-0 font-mono text-[13px] text-phosphor glow-phosphor-soft sm:inline">TASKS:</span>
           {wm.windows.filter((w) => w.open).length === 0 && (
-            <span className="font-mono text-[12px] text-mist/60">none running</span>
+            <span className="font-mono text-[12px] text-mist">none running</span>
           )}
           {wm.windows.filter((w) => w.open).map((w) => (
             <button key={w.id} onClick={() => (w.minimized ? wm.focusWindow(w.id) : wm.minimizeWindow(w.id))}
+              aria-pressed={w.minimized}
+              aria-label={`${w.minimized ? "Restore" : "Minimize"} ${w.title}`}
               className={`os-taskchip shrink-0 font-mono text-[12px] ${w.minimized ? "text-mist" : "text-phosphor"}`}>
               <span aria-hidden="true">{WINDOW_DEFS.find((d) => d.id === w.id)?.icon}</span>
               <span className="truncate">{w.title}</span>
