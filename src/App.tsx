@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { profile } from "@/data/profile";
 import { projects } from "@/data/projects";
 import { skillCategories } from "@/data/skills";
 import { certifications } from "@/data/certs";
 import BootSequence from "@/components/BootSequence/BootSequence";
 import AgentDock from "@/components/AgentDock/AgentDock";
-import ThreeField from "@/components/ThreeField/ThreeField";
+/* Three.js is ~half the bundle — only needed for the optional FIELD.SCR
+   screensaver, so it loads on first open, not on first paint (Doherty) */
+const ThreeField = lazy(() => import("@/components/ThreeField/ThreeField"));
 import TransmissionForm from "@/components/TransmissionForm/TransmissionForm";
 import { useWindowManager } from "@/hooks/useWindowManager";
 
@@ -67,13 +69,18 @@ function ProjectsContent() {
     <div className="space-y-3 overflow-auto p-5">
       {projects.map((p, i) => (
         <a key={p.codename} href={p.url} target="_blank" rel="noreferrer"
-           className="block rounded border border-hairline bg-void/60 p-3.5 hover:border-phosphor/50 hover:bg-phosphor/[0.04] transition-colors group">
+           className="block rounded border border-hairline bg-void/60 p-3.5 transition-colors group hover:border-phosphor/50 hover:bg-phosphor/[0.04]">
           <div className="flex items-baseline justify-between gap-3">
             <span className="font-mono text-[15px] text-paper group-hover:glow-phosphor-soft">{String(i + 1).padStart(2, "0")} — {p.codename}</span>
             <span className={`font-mono text-[11px] tracking-widest ${p.status === "ACTIVE" ? "text-signal" : "text-mist"}`}>[{p.status}]</span>
           </div>
           <p className="mt-1.5 font-mono text-[13px] leading-relaxed text-mist">{p.description}</p>
-          <p className="mt-2 font-mono text-[11px] tracking-widest text-cyan/70">{p.techStack.join(" · ")}</p>
+          {/* Law of Similarity: identical badge style = scannable metadata, not prose */}
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {p.techStack.map((t) => (
+              <span key={t} className="inline-block rounded border border-hairline-strong bg-void px-2 py-0.5 font-mono text-[11px] leading-none tracking-[0.08em] text-mist-soft">{t}</span>
+            ))}
+          </div>
         </a>
       ))}
     </div>
@@ -130,9 +137,11 @@ function LogContent() {
 
 function ScreensaverContent({ reduced }: { reduced: boolean }) {
   return (
-    <div className="relative h-full min-h-[300px]">
-      <ThreeField reduced={reduced} />
-    </div>
+    <Suspense fallback={<div className="grid h-full min-h-[300px] place-items-center font-mono text-[13px] text-mist">LOADING FIELD… <span className="crt-cursor ml-1" aria-hidden="true" /></div>}>
+      <div className="relative h-full min-h-[300px]">
+        <ThreeField reduced={reduced} />
+      </div>
+    </Suspense>
   );
 }
 
@@ -177,14 +186,15 @@ function TrashContent() {
 const WINDOW_DEFS = [
   { id: "about", title: "ABOUT.EXE", icon: "▤" },
   { id: "projects", title: "C:\\PROJECTS", icon: "▨" },
+  { id: "transmission", title: "UPLINK.FRM", icon: "✉" },
   { id: "skills", title: "SKILLS.SYS", icon: "▥" },
   { id: "log", title: "SIGNAL.LOG", icon: "▦" },
   { id: "screensaver", title: "FIELD.SCR", icon: "◉" },
-  { id: "transmission", title: "UPLINK.FRM", icon: "✉" },
   { id: "trash", title: "TRASH.EXE", icon: "🗑" },
 ];
 export default function App() {
-  const [bootComplete, setBootComplete] = useState(false);
+  // Doherty threshold: return visitors this session skip the 4s boot
+  const [bootComplete, setBootComplete] = useState(() => sessionStorage.getItem("m4lik-booted") === "1");
   const [reduced, setReduced] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const now = useClock();
@@ -249,7 +259,7 @@ export default function App() {
 
   return (
     <div className="crt-scanlines crt-vignette min-h-dvh bg-void text-paper">
-      {!bootComplete && <BootSequence onComplete={() => setBootComplete(true)} />}
+      {!bootComplete && <BootSequence onComplete={() => { sessionStorage.setItem("m4lik-booted", "1"); setBootComplete(true); }} />}
       <a href="#desktop" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:bg-phosphor focus:px-4 focus:py-3 focus:text-void focus:font-mono focus:text-sm">Skip to content</a>
 
       {/* menu bar */}
@@ -292,13 +302,20 @@ export default function App() {
           ))}
         </div>
 
-        {/* welcome hint */}
-        {wm.windows.every((w) => !w.open) && (
-          <div className="pointer-events-none relative z-10 mx-auto mt-6 max-w-[520px] px-5 text-center font-mono text-[14px] leading-relaxed text-mist">
-            <p><span className="text-phosphor glow-phosphor">m4lik-os v3.0</span> — portfolio OS of Malik Oliver</p>
-            <p className="mt-2 text-[13px]">tap an icon to open a window<span className="crt-cursor ml-1.5" aria-hidden="true" /></p>
-          </div>
-        )}
+        {/* primary CTA + welcome — Fitts's Law: big target, high contrast, always visible */}
+        <div className="relative z-10 mx-auto mt-8 max-w-[560px] px-5 text-center font-mono">
+          <p className="text-[15px] leading-relaxed text-mist">
+            <span className="text-phosphor glow-phosphor">m4lik-os v3.0</span> — Founding Backend / AI Engineer @ Triton Sentinel
+          </p>
+          <p className="mt-2 text-[13px] text-mist">open a window, or skip straight to the good part<span className="crt-cursor ml-1.5" aria-hidden="true" /></p>
+          <button
+            onClick={() => wm.openWindow("transmission")}
+            className="mx-auto mt-5 inline-flex min-h-[52px] items-center gap-2.5 rounded-md border-2 border-phosphor bg-phosphor/10 px-8 py-3 text-[15px] font-bold tracking-[0.14em] text-phosphor glow-phosphor transition-[transform,background-color,border-color] hover:bg-phosphor/20 hover:scale-[1.03] active:scale-[0.98]"
+          >
+            ✉ INITIATE UPLINK
+          </button>
+          <p className="mt-2 text-[12px] text-mist">hiring, collab, or questions — reply within 24h</p>
+        </div>
 
         {/* windows */}
         {wm.windows.filter((w) => w.open && !w.minimized).map((w) => (
