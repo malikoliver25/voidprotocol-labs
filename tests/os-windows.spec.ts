@@ -29,6 +29,33 @@ test('taskbar chips: raise -> minimize -> restore', async ({ page }) => {
   expect(await about.count()).toBe(1);
 });
 
+test('desktop icons can be dragged to reorder', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForSelector('.os-icon', { timeout: 15000 });
+
+  // capture initial icon order
+  const ids = await page.locator('.os-icon').evaluateAll((els) =>
+    els.map((el) => (el as HTMLElement).dataset.iconId)
+  );
+  const first = ids[0];
+  const second = ids[1];
+
+  // drag first icon onto second icon's position
+  const firstBox = await page.locator('.os-icon').first().boundingBox();
+  const secondBox = await page.locator('.os-icon').nth(1).boundingBox();
+  await page.mouse.move(firstBox!.x + 20, firstBox!.y + 20);
+  await page.mouse.down();
+  await page.mouse.move(secondBox!.x + 20, secondBox!.y + 20, { steps: 5 });
+  await page.mouse.up();
+  await page.waitForTimeout(300);
+
+  // order should reflect the drag: second icon now appears before first
+  const nextIds = await page.locator('.os-icon').evaluateAll((els) =>
+    els.map((el) => (el as HTMLElement).dataset.iconId)
+  );
+  expect(nextIds.indexOf(second)).toBeLessThan(nextIds.indexOf(first));
+});
+
 test('drag is smooth: state commits every move, no snap-back', async ({ page }) => {
   await page.goto('/');
   await page.waitForSelector('.os-icon', { timeout: 15000 });

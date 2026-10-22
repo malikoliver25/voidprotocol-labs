@@ -1,4 +1,5 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { gsap } from "gsap";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { profile } from "@/data/profile";
 import { projects } from "@/data/projects";
 import { skillCategories } from "@/data/skills";
@@ -199,6 +200,91 @@ export default function App() {
   const [unlocked, setUnlocked] = useState(false);
   const now = useClock();
   const wm = useWindowManager(WINDOW_DEFS);
+  /* desktop icon reorder — drag any icon to reorder the grid */
+  const [iconOrder, setIconOrder] = useState<string[]>(WINDOW_DEFS.map((d) => d.id));
+  const iconDragRef = useRef<{ id: string; el: HTMLElement | null; startX: number; startY: number; moved: boolean; raf: number; onMove: (ev: PointerEvent) => void; onUp: () => void } | null>(null);
+
+  const ICON_DRAG_THRESHOLD = 4;
+
+  const beginIconDrag = useCallback(
+    (e: React.PointerEvent, id: string) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      const targetEl = e.currentTarget as HTMLElement;
+      const d = {
+        id,
+        el: targetEl,
+        startX: e.clientX,
+        startY: e.clientY,
+        moved: false,
+        raf: 0,
+        onMove: (_ev: PointerEvent) => {},
+        onUp: () => {},
+      };
+      d.onMove = (ev: PointerEvent) => {
+        if (!iconDragRef.current || iconDragRef.current.id !== id) return;
+        const dx = Math.abs(ev.clientX - d.startX);
+        const dy = Math.abs(ev.clientY - d.startY);
+        if (!d.moved && Math.hypot(dx, dy) < ICON_DRAG_THRESHOLD) return;
+        d.moved = true;
+        if (d.raf) return;
+        d.raf = requestAnimationFrame(() => {
+          d.raf = 0;
+          d.el!.style.visibility = "hidden";
+          const el = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null;
+          d.el!.style.visibility = "";
+          const target = el?.closest<HTMLElement>("[data-icon-id]");
+          if (!target || target === d.el) return;
+          const toId = target.dataset.iconId ?? "";
+          if (!toId || toId === id) return;
+          setIconOrder((order) => {
+            const next = order.filter((i) => i !== id);
+            const at = next.indexOf(toId);
+            next.splice(at === -1 ? next.length : at + 1, 0, id);
+            return next;
+          });
+        });
+      };
+      d.onUp = () => {
+        iconDragRef.current = null;
+        window.removeEventListener("pointermove", d.onMove);
+        window.removeEventListener("pointerup", d.onUp);
+        if (d.raf) cancelAnimationFrame(d.raf);
+        d.el!.style.visibility = "";
+      };
+      iconDragRef.current = d;
+      window.addEventListener("pointermove", d.onMove, { passive: false });
+      window.addEventListener("pointerup", d.onUp, { once: true });
+    },
+    []
+  );
+
+  const orderedDefs = useMemo(
+    () => [...iconOrder].map((id) => WINDOW_DEFS.find((d) => d.id === id)!).filter(Boolean),
+    [iconOrder]
+  );
+  /* hero refs — targeted by the GSAP intro below */
+  const menuBarRef = useRef<HTMLElement | null>(null);
+  const desktopRef = useRef<HTMLElement | null>(null);
+  const ctaRef = useRef<HTMLButtonElement | null>(null);
+
+  /* GSAP hero intro — runs once boot completes; respects reduced motion */
+  useEffect(() => {
+    if (!bootComplete || reduced) return;
+    const tl = gsap.timeline();
+    tl.from(menuBarRef.current, { y: -44, opacity: 0, duration: 0.5, ease: "power2.out" })
+      .from(desktopRef.current, { opacity: 0, duration: 0.6 }, "-=0.2")
+      .from(".os-icon", {
+        y: 40,
+        opacity: 0,
+        stagger: 0.06,
+        duration: 0.5,
+        ease: "back.out(1.2)",
+      }, "-=0.3")
+      .from(ctaRef.current, { y: 20, opacity: 0, duration: 0.5, ease: "power2.out" }, "-=0.4")
+      .from("header + main > .os-pill", { opacity: 0, duration: 0.4 }, "-=0.2");
+    return () => { tl.kill(); };
+  }, [bootComplete, reduced]);
 
   useEffect(() => {
     const m = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -263,7 +349,7 @@ export default function App() {
       <a href="#desktop" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:bg-phosphor focus:px-4 focus:py-3 focus:text-void focus:font-mono focus:text-sm">Skip to content</a>
 
       {/* menu bar */}
-      <header className="os-pill sticky top-0 z-50 border-x-0 border-t-0">
+      <header ref={menuBarRef} className="os-pill sticky top-0 z-50 border-x-0 border-t-0">
         <div className="mx-auto flex h-[44px] max-w-[1440px] items-center justify-between gap-3 px-3 sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
             <span className="font-mono text-[15px] font-bold tracking-widest text-phosphor glow-phosphor-soft">m4lik-os</span>
@@ -278,7 +364,7 @@ export default function App() {
       </header>
 
       {/* desktop */}
-      <main id="desktop" className="relative min-h-[calc(100dvh-44px-56px)]">
+      <main ref={desktopRef} id="desktop" className="relative min-h-[calc(100dvh-44px-56px)]">
         {/* wallpaper */}
         <div className="aurora-canvas" aria-hidden="true">
           <div className="aurora-a" /><div className="aurora-b" /><div className="aurora-c" />
@@ -291,10 +377,10 @@ export default function App() {
           </div>
         )}
 
-        {/* icon grid */}
+        {/* icon grid — draggable to reorder */}
         <div className="relative z-10 mx-auto grid max-w-[1440px] grid-cols-3 gap-2 p-5 sm:grid-cols-4 sm:gap-4 sm:p-8 lg:grid-cols-7">
-          {WINDOW_DEFS.map((d) => (
-            <button key={d.id} onClick={() => wm.openWindow(d.id)} className="os-icon"
+          {orderedDefs.map((d) => (
+            <button key={d.id} data-icon-id={d.id} onPointerDown={(e) => beginIconDrag(e, d.id)} onClick={() => wm.openWindow(d.id)} className="os-icon os-icon-grab"
               aria-label={`Open ${d.title}`}>
               <span className="text-[34px] leading-none text-phosphor glow-phosphor-soft sm:text-[40px]" aria-hidden="true">{d.icon}</span>
               <span className="font-mono text-[12px] tracking-wider text-mist-soft">{d.title}</span>
@@ -309,6 +395,7 @@ export default function App() {
           </p>
           <p className="mt-2 text-[13px] text-mist">open a window, or skip straight to the good part<span className="crt-cursor ml-1.5" aria-hidden="true" /></p>
           <button
+            ref={ctaRef}
             onClick={() => wm.openWindow("transmission")}
             className="mx-auto mt-5 inline-flex min-h-[52px] items-center gap-2.5 rounded-md border-2 border-phosphor bg-phosphor/10 px-8 py-3 text-[15px] font-bold tracking-[0.14em] text-phosphor glow-phosphor transition-[transform,background-color,border-color] hover:bg-phosphor/20 hover:scale-[1.03] active:scale-[0.98]"
           >

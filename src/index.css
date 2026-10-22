@@ -222,7 +222,8 @@ main > section.is-offscreen .animate-pulse::after,
 }
 .os-icon:hover, .os-icon:focus-visible { border-color: rgba(61,255,136,0.35); background: rgba(61,255,136,0.06); }
 .os-icon:focus { outline: none; }
-.os-icon:focus-visible { outline: 2px solid #3DFF88; outline-offset: 2px; }
+.os-icon-grab { cursor: grab; }
+.os-icon-grab:active { cursor: grabbing; }
 /* window title bar — drag handle */
 .os-titlebar {
   display: flex;
