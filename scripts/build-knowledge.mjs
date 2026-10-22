@@ -37,7 +37,7 @@ const recruiterStatic = `RECRUITER FAQ — derived from site data (projects + sk
 Q: What coding language does Malik use the most?
 A: Python — leads for MLOps/AI (LangGraph, FastAPI, vLLM) plus TypeScript for the portfolio terminal. GitHub live count via sync-github shows Python strongest by repo count.
 Q: Based on all of Malik's work what is his primary/strongest role?
-A: Primary: Founding Backend / AI Engineer at Triton Sentinel (started July 2026) — the AI-assisted red team platform (tritonsentinel.com). Strongest: Backend/AI Orchestration — Level 5 in Python, FastAPI, LangGraph, Agentic Architecture, RESTful APIs plus Level 5 in Kubernetes, Docker, CI/CD, vLLM. Previously shipped air-gapped, containerized LLM systems (MTM Industrial) and agentic orchestration (Sentinel-Core).
+A: Primary: Backend & AI Engineer specializing in MLOps & AI Infrastructure. Strongest: Backend/AI Orchestration — Level 5 in Python, FastAPI, LangGraph, Agentic Architecture, RESTful APIs plus Level 5 in Kubernetes, Docker, CI/CD, vLLM. Ships air-gapped, containerized LLM systems (MTM Industrial) and agentic orchestration (Sentinel-Core).
 Q: Is Malik good at QA/AI Engineering/MLOps/DevOps?
 A: QA: TDD 4, Pytest 5, Playwright 3 — disciplined. AI Eng: LangGraph 5, RAG 4, MCP 4 — core strength. MLOps/Infra: vLLM 5, K8s 5, Docker 5 — strongest differentiator. Backend: FastAPI 5, Python 5, REST 5 — primary role.
 Q: What is Malik's largest/best project?
@@ -59,7 +59,7 @@ const doc = {
     { id: 'recruiter', content: recruiterStatic },
     {
       id: 'routing',
-      content: `Availability: Active, Indianapolis (open to Chicago). Contact via Transmission form. Rules: Never invent employers/metrics. If unknown, say "Hmm, I don't have that in my orbit yet — hit Transmission and I'll nudge Malik directly! :)"`
+      content: `Availability: Active, Indianapolis (open to Chicago). Contact via Transmission form. Rules: Never invent employers/metrics. If unknown, say "Hmm, I don't have that in my clock-face yet — hit Transmission and I'll nudge Malik directly! :)"`
     }
   ]
 };

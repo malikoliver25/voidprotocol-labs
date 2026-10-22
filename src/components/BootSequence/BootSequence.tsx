@@ -5,7 +5,7 @@ interface BootSequenceProps {
 }
 
 const BOOT_LINES = [
-  { text: "m4lik-os v3.0 // BUILD 20261021 // DARK", delay: 0 },
+  { text: "NETRUNNER OS v2.77 // BUILD 20260731 // AIR-GAPPED", delay: 0 },
   { text: "BIOS POST… INITIALIZING NEURAL INTERFACE", delay: 180 },
   { text: "CHECKING CORE MEMORY… 64GB ECC — OK", delay: 360 },
   { text: "LOADING KERNEL MODULES… OK", delay: 520 },
@@ -16,9 +16,9 @@ const BOOT_LINES = [
   { text: "INITIALIZING LLM INFERENCE ENGINE… vLLM — READY", delay: 1480 },
   { text: "SCANNING THREAT ENVIRONMENT… ALL CLEAR", delay: 1680 },
   { text: "LOADING USER PROFILE: MALIK OLIVER", delay: 1860 },
-  { text: "ROLE: Founding Backend / AI Engineer — Triton Sentinel", delay: 2020 },
+  { text: "ROLE: MLOps & AI Infrastructure Engineer", delay: 2020 },
   { text: "STATUS: ACTIVE // CLEARANCE: LEVEL-5", delay: 2180 },
-  { text: "SYSTEM READY. WELCOME, OPERATOR.", delay: 2380 },
+  { text: "SYSTEM READY. WELCOME, NETRUNNER.", delay: 2380 },
 ];
 
 export default function BootSequence({ onComplete }: BootSequenceProps) {
@@ -34,10 +34,6 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
   }, [fading, onComplete]);
 
   const handleSkip = useCallback(() => triggerComplete(), [triggerComplete]);
-
-  useEffect(() => {
-    rootRef.current?.focus();
-  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -68,9 +64,8 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
   return (
     <div
       ref={rootRef}
-      className={`fixed inset-0 z-[10000] flex items-center justify-center overflow-y-auto bg-void px-4 py-6 sm:px-6 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${fading ? "opacity-0 scale-[0.985] blur-[2px] pointer-events-none" : "opacity-100 scale-100 blur-0"}`}
+      className={`fixed inset-0 z-[10000] flex items-center justify-center overflow-hidden bg-void px-4 py-6 sm:px-6 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${fading ? "opacity-0 scale-[0.985] blur-[2px] pointer-events-none" : "opacity-100 scale-100 blur-0"}`}
       style={{ height: "100dvh" }}
-      tabIndex={-1}
       role="dialog"
       aria-label="System boot sequence"
       aria-modal="true"
@@ -97,9 +92,9 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
           <div className="flex items-center justify-between gap-3 border-b border-hairline bg-void/60 px-4 py-3">
             <div className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full bg-[#FF3B30] shadow-[0_0_8px_rgba(255,59,48,0.5)]" aria-hidden="true" />
-              <span className="h-2.5 w-2.5 rounded-full bg-signal shadow-[0_0_8px_rgba(217,249,157,0.4)]" aria-hidden="true" />
-              <span className="h-2.5 w-2.5 rounded-full bg-cyan shadow-[0_0_8px_rgba(139,124,255,0.5)]" aria-hidden="true" />
-              <span className="ml-2 hidden sm:inline font-mono text-[10px] tracking-[0.16em] text-mist">SYS_BOOT — m4lik-os</span>
+              <span className="h-2.5 w-2.5 rounded-full bg-signal shadow-[0_0_8px_rgba(255,232,26,0.4)]" aria-hidden="true" />
+              <span className="h-2.5 w-2.5 rounded-full bg-cyan shadow-[0_0_8px_rgba(0,229,255,0.5)]" aria-hidden="true" />
+              <span className="ml-2 hidden sm:inline font-mono text-[10px] tracking-[0.16em] text-mist">SYS_BOOT — NETRUNNER_DECK</span>
             </div>
             <div className="flex items-center gap-2 font-mono text-[10px] tracking-[0.12em] text-mist/70">
               <span className="hidden sm:inline">SECURE • AIR-GAPPED</span>
@@ -145,9 +140,9 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
             <div className="mt-2 h-[4px] w-full overflow-hidden rounded-full bg-void border border-hairline" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} aria-label="Boot progress">
               <div className="h-full rounded-full bg-gradient-to-r from-cyan via-signal to-cyan transition-all duration-300 ease-out" style={{ width: `${progress}%`, boxShadow: progress > 4 ? "0 0 12px rgba(0,229,255,0.5)" : undefined }} aria-hidden="true" />
             </div>
-            <div className="mt-1.5 flex justify-between font-mono text-[9px] tracking-[0.12em] text-mist/80">
+            <div className="mt-1.5 flex justify-between font-mono text-[9px] tracking-[0.12em] text-mist/40">
               <span>ORCHESTRATION FIELD</span>
-              <span>v3.0 • {visibleLines}/{BOOT_LINES.length}</span>
+              <span>v2.77 • {visibleLines}/{BOOT_LINES.length}</span>
             </div>
           </div>
 
@@ -168,8 +163,8 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
         </div>
 
         {/* caption */}
-        <p className="mt-4 text-center font-mono text-[10px] tracking-[0.12em] text-mist/80">
-          Founding Backend / AI Engineer @ Triton Sentinel — Malik Oliver • Indianapolis → Chicago
+        <p className="mt-4 text-center font-mono text-[10px] tracking-[0.12em] text-mist/30">
+          MLOps & AI Infrastructure — Malik Oliver • Indianapolis → Chicago
         </p>
       </div>
 

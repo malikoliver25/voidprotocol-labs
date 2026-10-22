@@ -2,9 +2,6 @@ export interface Profile {
   handle: string;
   realName: string;
   title: string;
-  employer?: string;
-  employerUrl?: string;
-  startDate?: string;
   location: string;
   openToRelocation: string;
   email: string;

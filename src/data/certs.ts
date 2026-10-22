@@ -75,4 +75,10 @@ export const certifications: Certification[] = [
     id: "6a4b200c6e240ab01cc6e970",
     verified: true,
   },
+  {
+    name: "Advanced Playwright, Test Automation University",
+    issuer: "Test Automation University",
+    issued: "Jul 2026",
+    verified: true,
+  },
 ];

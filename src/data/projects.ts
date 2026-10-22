@@ -11,6 +11,15 @@ export const projects: Project[] = [
     status: "ACTIVE",
   },
   {
+    codename: "MTM-INDUSTRIAL-AI",
+    name: "Production AI Portal",
+    description:
+      "CMMC-compliant AI portal engineered for manufacturing, serving Llama 3.2 Vision locally via air-gapped infrastructure without external API dependencies.",
+    url: "https://github.com/malikoliver25/mtm-industrial-ai-portal",
+    techStack: ["Python", "Streamlit", "LangGraph", "MinIO", "MySQL", "Qdrant"],
+    status: "ACTIVE",
+  },
+  {
     codename: "PORTFOLIO-ASSISTANT",
     name: "Agentic Orchestration Microservice",
     description:
@@ -27,14 +36,5 @@ export const projects: Project[] = [
     url: "https://github.com/malikoliver25/malikoliver25.github.io",
     techStack: ["React", "TypeScript", "Terminal UI", "Streaming"],
     status: "DEPLOYED",
-  },
-  {
-    codename: "MTM-INDUSTRIAL-AI",
-    name: "Production AI Portal",
-    description:
-      "CMMC-compliant AI portal engineered for manufacturing, serving Llama 3.2 Vision locally via air-gapped infrastructure without external API dependencies.",
-    url: "https://github.com/malikoliver25/mtm-industrial-ai-portal",
-    techStack: ["Python", "Streamlit", "LangGraph", "MinIO", "MySQL", "Qdrant"],
-    status: "ACTIVE",
   },
 ];

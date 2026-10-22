@@ -1,340 +1,19 @@
-import { gsap } from "gsap";
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { profile } from "@/data/profile";
+import ThreeField from "@/components/ThreeField/ThreeField";
+gsap.registerPlugin(ScrollTrigger);
+import { useScrollReveal } from "@/hooks/useScrollReveal";
+import TransmissionForm from "@/components/TransmissionForm/TransmissionForm";
 import { projects } from "@/data/projects";
 import { skillCategories } from "@/data/skills";
 import { certifications } from "@/data/certs";
+import type { Certification } from "@/types";
 import BootSequence from "@/components/BootSequence/BootSequence";
 import AgentDock from "@/components/AgentDock/AgentDock";
-/* Three.js is ~half the bundle — only needed for the optional FIELD.SCR
-   screensaver, so it loads on first open, not on first paint (Doherty) */
-const ThreeField = lazy(() => import("@/components/ThreeField/ThreeField"));
-import TransmissionForm from "@/components/TransmissionForm/TransmissionForm";
-import { useWindowManager } from "@/hooks/useWindowManager";
-
-function useClock() {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
-  return now;
-}
-
-function useKonami(onUnlock: () => void) {
-  const seq = useMemo(() => ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"], []);
-  const posRef = useRef(0);
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-      if (k === seq[posRef.current]) {
-        posRef.current += 1;
-        if (posRef.current === seq.length) {
-          posRef.current = 0;
-          onUnlock();
-        }
-      } else {
-        posRef.current = k === seq[0] ? 1 : 0;
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [seq, onUnlock]);
-}
-
-/* ---- window contents ---- */
-
-function AboutContent() {
-  return (
-    <div className="space-y-4 p-5 font-mono text-[15px] leading-relaxed text-mist-soft">
-      <p className="text-paper glow-phosphor-soft">
-        {profile.realName} <span className="text-mist">// {profile.handle}</span>
-      </p>
-      <p className="text-phosphor">{profile.title} — {profile.employer}</p>
-      <p>{profile.summary}</p>
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[13px] text-mist">
-        <dt>BASE</dt><dd>{profile.location}</dd>
-        <dt>MOBILITY</dt><dd>{profile.openToRelocation}</dd>
-        <dt>STATUS</dt><dd className="text-signal">{profile.status} — {profile.clearance}</dd>
-        <dt>UPLINK</dt><dd><a href={`mailto:${profile.email}`} className="text-cyan hover:text-paper underline">{profile.email}</a></dd>
-        <dt>GITHUB</dt><dd><a href={profile.github} target="_blank" rel="noreferrer" className="text-cyan hover:text-paper underline">malikoliver25 ↗</a></dd>
-        <dt>LINKEDIN</dt><dd><a href={profile.linkedin} target="_blank" rel="noreferrer" className="text-cyan hover:text-paper underline">malik-o ↗</a></dd>
-      </dl>
-      <p className="text-mist text-[13px]">$ cat manifesto.txt<span className="crt-cursor ml-1" aria-hidden="true" /></p>
-    </div>
-  );
-}
-
-function ProjectsContent() {
-  return (
-    <div className="space-y-3 overflow-auto p-5">
-      {projects.map((p, i) => (
-        <a key={p.codename} href={p.url} target="_blank" rel="noreferrer"
-           className="block rounded border border-hairline bg-void/60 p-3.5 transition-colors group hover:border-phosphor/50 hover:bg-phosphor/[0.04]">
-          <div className="flex items-baseline justify-between gap-3">
-            <span className="font-mono text-[15px] text-paper group-hover:glow-phosphor-soft">{String(i + 1).padStart(2, "0")} — {p.codename}</span>
-            <span className={`font-mono text-[11px] tracking-widest ${p.status === "ACTIVE" ? "text-signal" : "text-mist"}`}>[{p.status}]</span>
-          </div>
-          <p className="mt-1.5 font-mono text-[13px] leading-relaxed text-mist">{p.description}</p>
-          {/* Law of Similarity: identical badge style = scannable metadata, not prose */}
-          <div className="mt-2.5 flex flex-wrap gap-1.5">
-            {p.techStack.map((t) => (
-              <span key={t} className="inline-block rounded border border-hairline-strong bg-void px-2 py-0.5 font-mono text-[11px] leading-none tracking-[0.08em] text-mist-soft">{t}</span>
-            ))}
-          </div>
-        </a>
-      ))}
-    </div>
-  );
-}
-
-function SkillsContent() {
-  return (
-    <div className="grid gap-4 overflow-auto p-5 sm:grid-cols-2">
-      {skillCategories.map((cat) => (
-        <div key={cat.category} className="rounded border border-hairline bg-void/60 p-3.5">
-          <div className="flex items-center gap-2 font-mono text-[13px] text-paper">
-            <span className="text-cyan">{cat.icon}</span>{cat.category}
-          </div>
-          <ul className="mt-2 space-y-1.5">
-            {cat.skills.map((s) => (
-              <li key={s.name} className="font-mono text-[12px]">
-                <div className="flex justify-between text-mist"><span>{s.name}</span><span className="text-phosphor">{"▮".repeat(s.level)}{"▯".repeat(5 - s.level)}</span></div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function LogContent() {
-  return (
-    <div className="overflow-auto p-5 font-mono text-[13px]">
-      <div className="space-y-2">
-        {certifications.map((c) => (
-          <div key={`${c.name}-${c.issued}`} className="flex items-baseline justify-between gap-3 border-b border-hairline/60 pb-1.5">
-            <span className="text-mist-soft">{c.verified ? "✓" : "·"} {c.name}</span>
-            <span className="text-mist text-[12px]">{c.issuer} • {c.issued}</span>
-          </div>
-        ))}
-        <div className="flex items-baseline justify-between gap-3 border-b border-hairline/60 pb-1.5">
-          <span className="text-signal">▸ ROLE — Founding Backend / AI Engineer, Triton Sentinel</span>
-          <span className="text-mist text-[12px]">2026-07</span>
-        </div>
-        <div className="flex items-baseline justify-between gap-3 border-b border-hairline/60 pb-1.5">
-          <span className="text-mist-soft">▸ DEPLOYMENT — MTM Industrial AI portal live</span>
-          <span className="text-mist text-[12px]">2025-11</span>
-        </div>
-        <div className="flex items-baseline justify-between gap-3 border-b border-hairline/60 pb-1.5">
-          <span className="text-mist-soft">▸ DEPLOYMENT — Sentinel-Core graph engine</span>
-          <span className="text-mist text-[12px]">2025-09</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ScreensaverContent({ reduced }: { reduced: boolean }) {
-  return (
-    <Suspense fallback={<div className="grid h-full min-h-[300px] place-items-center font-mono text-[13px] text-mist">LOADING FIELD… <span className="crt-cursor ml-1" aria-hidden="true" /></div>}>
-      <div className="relative h-full min-h-[300px]">
-        <ThreeField reduced={reduced} />
-      </div>
-    </Suspense>
-  );
-}
-
-function TransmissionContent() {
-  return (
-    <div className="p-5">
-      <p className="mb-4 font-mono text-[13px] text-mist">$ establish uplink — direct reply within 24h</p>
-      <TransmissionForm />
-    </div>
-  );
-}
-
-function TrashContent() {
-  return (
-    <div className="p-5 font-mono text-[13px] leading-relaxed text-mist">
-      <p className="text-paper glow-phosphor-soft">TRASH.EXE — 7 deleted files, 0 forgotten</p>
-      <p className="mt-1 text-[12px]">files removed in the v3.0 OS rebuild. view at your own nostalgia.</p>
-      <ul className="mt-4 space-y-2">
-        {[
-          ["Header.tsx", "old fixed nav — replaced by menu bar"],
-          ["AboutSection.tsx", "the 'Mercenary Profile' HUD — now ABOUT.EXE"],
-          ["ProjectCards.tsx", "reveal-card grid — now C:\\PROJECTS"],
-          ["SkillGrid.tsx", "level bars — now SKILLS.SYS"],
-          ["LogHistory.tsx", "cert feed — now SIGNAL.LOG"],
-          ["useTerminal.ts", "the interactive terminal — now the whole OS"],
-          ["hero-title", "'Infrastructure for intelligence that can't fail.'"],
-        ].map(([file, note]) => (
-          <li key={file} className="flex flex-col gap-0.5 border-b border-hairline/60 pb-2">
-            <span className="text-mist-soft">├── <span className="text-phosphor">{file}</span></span>
-            <span className="pl-6 text-mist text-[12px]">{note}</span>
-          </li>
-        ))}
-      </ul>
-      <p className="mt-4 text-mist">$ empty-trash <span className="text-mist/70">— permission denied. history stays.</span></p>
-      <p className="mt-2 text-mist">you found the easter egg. VANTA is proud of you. 🌘</p>
-    </div>
-  );
-}
-
-/* ---- app ---- */
-
-const WINDOW_DEFS = [
-  { id: "about", title: "ABOUT.EXE", icon: "▤" },
-  { id: "projects", title: "C:\\PROJECTS", icon: "▨" },
-  { id: "transmission", title: "UPLINK.FRM", icon: "✉" },
-  { id: "skills", title: "SKILLS.SYS", icon: "▥" },
-  { id: "log", title: "SIGNAL.LOG", icon: "▦" },
-  { id: "screensaver", title: "FIELD.SCR", icon: "◉" },
-  { id: "trash", title: "TRASH.EXE", icon: "🗑" },
-];
-export default function App() {
-  // Doherty threshold: return visitors this session skip the 4s boot
-  const [bootComplete, setBootComplete] = useState(() => sessionStorage.getItem("m4lik-booted") === "1");
+function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(false);
-  const [unlocked, setUnlocked] = useState(false);
-  const now = useClock();
-  const wm = useWindowManager(WINDOW_DEFS);
-  /* desktop icon reorder — drag any icon to reorder the grid */
-  const [iconOrder, setIconOrder] = useState<string[]>(WINDOW_DEFS.map((d) => d.id));
-  const iconDragRef = useRef<{ id: string; el: HTMLElement | null; startX: number; startY: number; moved: boolean; raf: number; onMove: (ev: PointerEvent) => void; onUp: () => void } | null>(null);
-
-  const ICON_DRAG_THRESHOLD = 4;
-
-  const beginIconDrag = useCallback(
-    (e: React.PointerEvent, id: string) => {
-      if (e.button !== 0) return;
-      e.preventDefault();
-      const targetEl = e.currentTarget as HTMLElement;
-      const d = {
-        id,
-        el: targetEl,
-        startX: e.clientX,
-        startY: e.clientY,
-        moved: false,
-        raf: 0,
-        onMove: (_ev: PointerEvent) => {},
-        onUp: () => {},
-      };
-      d.onMove = (ev: PointerEvent) => {
-        if (!iconDragRef.current || iconDragRef.current.id !== id) return;
-        const dx = Math.abs(ev.clientX - d.startX);
-        const dy = Math.abs(ev.clientY - d.startY);
-        if (!d.moved && Math.hypot(dx, dy) < ICON_DRAG_THRESHOLD) return;
-        d.moved = true;
-        if (d.raf) return;
-        d.raf = requestAnimationFrame(() => {
-          d.raf = 0;
-          d.el!.style.visibility = "hidden";
-          const el = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null;
-          d.el!.style.visibility = "";
-          const target = el?.closest<HTMLElement>("[data-icon-id]");
-          if (!target || target === d.el) return;
-          const toId = target.dataset.iconId ?? "";
-          if (!toId || toId === id) return;
-          setIconOrder((order) => {
-            const next = order.filter((i) => i !== id);
-            const at = next.indexOf(toId);
-            next.splice(at === -1 ? next.length : at + 1, 0, id);
-            return next;
-          });
-        });
-      };
-      d.onUp = () => {
-        iconDragRef.current = null;
-        window.removeEventListener("pointermove", d.onMove);
-        window.removeEventListener("pointerup", d.onUp);
-        if (d.raf) cancelAnimationFrame(d.raf);
-        d.el!.style.visibility = "";
-      };
-      iconDragRef.current = d;
-      window.addEventListener("pointermove", d.onMove, { passive: false });
-      window.addEventListener("pointerup", d.onUp, { once: true });
-    },
-    []
-  );
-
-  const orderedDefs = useMemo(
-    () => [...iconOrder].map((id) => WINDOW_DEFS.find((d) => d.id === id)!).filter(Boolean),
-    [iconOrder]
-  );
-  /* keyboard reorder for desktop icons — roving tabindex, arrow keys reorder */
-  const [focusedIconId, setFocusedIconId] = useState<string | null>(iconOrder[0] ?? null);
-
-  const iconCols = useMemo(() => {
-    const w = window.innerWidth;
-    if (w >= 1024) return 7;
-    if (w >= 640) return 4;
-    if (w >= 480) return 3;
-    return 3;
-  }, []);
-
-  const moveIconFocus = useCallback(
-    (id: string, dir: number) => {
-      if (!orderedDefs.length) return;
-      const idx = orderedDefs.findIndex((d) => d.id === id);
-      if (idx === -1) return;
-      const nextIdx = Math.max(0, Math.min(orderedDefs.length - 1, idx + dir));
-      const nextId = orderedDefs[nextIdx].id;
-      setFocusedIconId(nextId);
-      const el = document.querySelector<HTMLElement>(`[data-icon-id="${nextId}"]`);
-      el?.focus();
-    },
-    [orderedDefs]
-  );
-
-  const handleIconKeyDown = useCallback(
-    (e: React.KeyboardEvent, id: string) => {
-      if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        moveIconFocus(id, -1);
-      } else if (e.key === "ArrowRight") {
-        e.preventDefault();
-        moveIconFocus(id, 1);
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        moveIconFocus(id, -iconCols);
-      } else if (e.key === "ArrowDown") {
-        e.preventDefault();
-        moveIconFocus(id, iconCols);
-      } else if ((e.key === "Home" || e.key === "PageUp") && !e.shiftKey) {
-        e.preventDefault();
-        moveIconFocus(id, -(orderedDefs.length - 1));
-      } else if ((e.key === "End" || e.key === "PageDown") && !e.shiftKey) {
-        e.preventDefault();
-        moveIconFocus(id, orderedDefs.length - 1);
-      }
-    },
-    [orderedDefs, iconCols, focusedIconId]
-  );
-  /* hero refs — targeted by the GSAP intro below */
-  const menuBarRef = useRef<HTMLElement | null>(null);
-  const desktopRef = useRef<HTMLElement | null>(null);
-  const ctaRef = useRef<HTMLButtonElement | null>(null);
-
-  /* GSAP hero intro — runs once boot completes; respects reduced motion */
-  useEffect(() => {
-    if (!bootComplete || reduced) return;
-    const tl = gsap.timeline();
-    tl.from(menuBarRef.current, { y: -44, opacity: 0, duration: 0.5, ease: "power2.out" })
-      .from(desktopRef.current, { opacity: 0, duration: 0.6 }, "-=0.2")
-      .from(".os-icon", {
-        y: 40,
-        opacity: 0,
-        stagger: 0.06,
-        duration: 0.5,
-        ease: "back.out(1.2)",
-      }, "-=0.3")
-      .from(ctaRef.current, { y: 20, opacity: 0, duration: 0.5, ease: "power2.out" }, "-=0.4")
-      .from("header + main > .os-pill", { opacity: 0, duration: 0.4 }, "-=0.2");
-    return () => { tl.kill(); };
-  }, [bootComplete, reduced]);
-
   useEffect(() => {
     const m = window.matchMedia("(prefers-reduced-motion: reduce)");
     setReduced(m.matches);
@@ -342,176 +21,211 @@ export default function App() {
     m.addEventListener("change", h);
     return () => m.removeEventListener("change", h);
   }, []);
+  return reduced;
+}
 
-  useKonami(() => setUnlocked(true));
+function SplitWords({ text }: { text: string }) {
+  const words = text.split(" ");
+  return (
+    <span aria-hidden="true">
+      {words.map((w, i) => (
+        <span key={i} className="inline-block overflow-hidden align-baseline pb-[0.08em] mr-[0.28em] last:mr-0" style={{ verticalAlign: "bottom" }}>
+          <span className="split-word inline-block will-change-transform" style={{ display: "inline-block" }}>{w}</span>
+        </span>
+      ))}
+    </span>
+  );
+}
 
+export default function App() {
+  const reduced = usePrefersReducedMotion();
+  const heroRef = useRef<HTMLElement>(null);
+  const [mobileMenu, setMobileMenu] = useState(false);
+  // transmission handled by <TransmissionForm /> deep module
+  const [bootComplete, setBootComplete] = useState(false);
   useEffect(() => {
-    if (!bootComplete) {
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => { document.body.style.overflow = prev; };
-    }
+    if (!bootComplete) { const prev = document.body.style.overflow; document.body.style.overflow = "hidden"; return () => { document.body.style.overflow = prev; }; }
   }, [bootComplete]);
-
-  // move focus into a window when it opens or restores (keyboard users)
-  const openIds = wm.windows.filter((w) => w.open && !w.minimized).map((w) => w.id).join(",");
+  useEffect(() => { if (bootComplete) { const id = window.setTimeout(() => ScrollTrigger.refresh(), 800); return () => window.clearTimeout(id); } }, [bootComplete]);
+  // keyboard: Esc closes mobile nav + restore focus, and inert background
   useEffect(() => {
-    const last = openIds.split(",").filter(Boolean).slice(-1)[0];
-    if (!last) return;
-    const el = document.querySelector<HTMLElement>(`.os-win[data-id="${last}"]`);
-    if (el && !el.contains(document.activeElement)) el.focus();
-  }, [openIds]);
-
-  // external open-window requests (e.g. VANTA's Transmission link)
+    if (!mobileMenu) return;
+    const trigger = document.querySelector<HTMLButtonElement>('[aria-controls="mobile-nav"]');
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { setMobileMenu(false); trigger?.focus(); } };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mobileMenu]);
+  // pause offscreen CSS animations + prevent below-fold cards from ticking
   useEffect(() => {
-    const h = (e: Event) => wm.openWindow((e as CustomEvent<string>).detail);
-    window.addEventListener("m4lik-open-window", h);
-    return () => window.removeEventListener("m4lik-open-window", h);
-  }, [wm.openWindow]);
-
-  const clock = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
-
-  const contentFor = (id: string) => {
-    switch (id) {
-      case "about": return <AboutContent />;
-      case "projects": return <ProjectsContent />;
-      case "skills": return <SkillsContent />;
-      case "log": return <LogContent />;
-      case "screensaver": return <ScreensaverContent reduced={reduced} />;
-      case "transmission": return <TransmissionContent />;
-      case "trash": return <TrashContent />;
-    }
-  };
-
-  const winH = (id: string) => {
-    switch (id) {
-      case "screensaver": return 420;
-      case "about": return 560;
-      case "projects": return 600;
-      default: return 480;
-    }
+    if (!bootComplete) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const sections = Array.from(document.querySelectorAll<HTMLElement>("main > section"));
+    if (sections.length === 0) return;
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const sec = entry.target as HTMLElement;
+        const isVisible = entry.isIntersecting;
+        sec.classList.toggle("is-offscreen", !isVisible);
+        sec.querySelectorAll<HTMLElement>(".animate-pulse, .reveal-card, .hero-viewport, .deploy-track").forEach((el) => el.classList.toggle("is-offscreen", !isVisible));
+      });
+    }, { threshold: 0.01, rootMargin: "120px" });
+    sections.forEach((s) => io.observe(s));
+    return () => io.disconnect();
+  }, [bootComplete]);
+  // Lenis removed per user request — using native scroll
+  useEffect(() => {
+    const refresh = () => ScrollTrigger.refresh();
+    if (document.fonts?.ready) document.fonts.ready.then(refresh);
+    window.addEventListener("load", refresh); const t = setTimeout(refresh, 800);
+    return () => { window.removeEventListener("load", refresh); clearTimeout(t); };
+  }, []);
+  useScrollReveal(bootComplete && !reduced, heroRef);
+  const scrollTo = (id: string) => {
+    setMobileMenu(false);
+    const el = document.querySelector(id);
+    if (!el) return;
+    (el as HTMLElement).scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
   };
 
   return (
-    <div className="crt-scanlines crt-vignette min-h-dvh bg-void text-paper">
-      {!bootComplete && <BootSequence onComplete={() => { sessionStorage.setItem("m4lik-booted", "1"); setBootComplete(true); }} />}
-      <a href="#desktop" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:bg-phosphor focus:px-4 focus:py-3 focus:text-void focus:font-mono focus:text-sm">Skip to content</a>
-
-      {/* menu bar */}
-      <header ref={menuBarRef} className="os-pill sticky top-0 z-50 border-x-0 border-t-0">
-        <div className="mx-auto flex h-[44px] max-w-[1440px] items-center justify-between gap-3 px-3 sm:px-5">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="font-mono text-[15px] font-bold tracking-widest text-phosphor glow-phosphor-soft">m4lik-os</span>
-            <span className="hidden font-mono text-[12px] text-mist sm:inline">{profile.title} @ {profile.employer}</span>
+    <div className="min-h-dvh bg-void text-paper antialiased">
+      {!bootComplete && <BootSequence onComplete={() => setBootComplete(true)} />}
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded focus:bg-cyan focus:px-4 focus:py-3 focus:text-void focus:font-mono focus:text-xs focus:tracking-widest">Skip to content</a>
+      <div className="nav-bar sticky top-0 z-40 border-b border-hairline bg-void/80 backdrop-blur-[12px] supports-[backdrop-filter]:bg-void/70">
+        <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-cyan/50 to-transparent opacity-60" aria-hidden="true" />
+        <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 h-[56px] sm:h-[60px]">
+          <a href="#" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" }); }} className="group flex items-center gap-3 min-w-0 focus:outline-none">
+            <span className="grid h-8 w-8 place-items-center rounded-[8px] border border-hairline bg-panel text-[10px] font-mono font-semibold tracking-[0.14em] text-mist group-hover:border-cyan/40 group-hover:text-cyan transition-colors">M/O</span>
+            <span className="hidden sm:flex flex-col leading-none text-left"><span className="font-display text-[13px] font-semibold tracking-[0.02em] text-paper">Malik Oliver</span><span className="font-mono text-[10px] tracking-[0.16em] text-mist">NETRUNNER_M4LIK — LVL 5</span></span>
+            <span className="sm:hidden font-mono text-[11px] tracking-[0.16em] text-mist truncate">NETRUNNER_M4LIK</span>
+          </a>
+          <nav aria-label="Primary" className="hidden lg:flex items-center gap-1">
+            {[["Systems", "#systems"], ["Deployments", "#deployments"], ["Signal Log", "#log"], ["Transmission", "#transmission"]].map(([label, href]) => (
+              <button key={label} onClick={() => scrollTo(href)} className="font-mono text-[11px] tracking-[0.16em] text-mist hover:text-paper px-3 py-2 rounded transition-colors">{label}</button>
+            ))}
+          </nav>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="hidden md:flex items-center gap-2 rounded-full border border-hairline bg-panel px-3 py-[6px]"><span className="h-1.5 w-1.5 rounded-full bg-mist/40" aria-hidden="true" /><span className="font-mono text-[10px] tracking-[0.16em] text-mist">STACK • VERIFIED</span><span className="hidden xl:inline font-mono text-[10px] tracking-[0.12em] text-mist-soft">K8s • vLLM • LangGraph</span></div>
+            <button onClick={() => scrollTo("#transmission")} className="hidden sm:inline-flex items-center gap-2 rounded-full bg-signal px-4 py-[9px] font-mono text-[11px] font-semibold tracking-[0.14em] text-void hover:bg-[#FFF04A] active:scale-[0.96] transition-[color,background-color,border-color,transform,opacity]"><span>INITIATE</span><span aria-hidden="true" className="text-[13px] leading-none">↗</span></button>
+            <button aria-label={mobileMenu ? "Close menu" : "Open menu"} aria-expanded={mobileMenu} aria-controls="mobile-nav" onClick={() => setMobileMenu((v) => !v)} className="lg:hidden grid h-9 w-9 place-items-center rounded-full border border-hairline bg-panel text-mist hover:text-paper hover:border-hairline-strong transition-colors"><span aria-hidden="true" className="font-mono text-[14px] leading-none">{mobileMenu ? "✕" : "≡"}</span></button>
           </div>
-          <div className="flex items-center gap-3 font-mono text-[13px] text-mist">
-            <span className="hidden sm:inline">{profile.location}</span>
-            <span className="text-phosphor tabular-nums">{clock}</span>
-            <span className="h-1.5 w-1.5 rounded-full bg-signal" aria-hidden="true" />
-          </div>
         </div>
-      </header>
-
-      {/* desktop */}
-      <main ref={desktopRef} id="desktop" className="relative min-h-[calc(100dvh-44px-56px)]">
-        {/* wallpaper */}
-        <div className="aurora-canvas" aria-hidden="true">
-          <div className="aurora-a" /><div className="aurora-b" /><div className="aurora-c" />
-        </div>
-
-        {/* konami unlock */}
-        {unlocked && (
-          <div className="pointer-events-none absolute left-1/2 top-6 z-40 -translate-x-1/2 rounded border border-signal/40 bg-void/90 px-4 py-2 font-mono text-[13px] text-signal glow-phosphor-soft">
-            CHEAT CODE ACCEPTED — OPERATOR MODE
-          </div>
-        )}
-
-        {/* icon grid — draggable to reorder */}
-        <div className="relative z-10 mx-auto grid max-w-[1440px] grid-cols-3 gap-2 p-5 sm:grid-cols-4 sm:gap-4 sm:p-8 lg:grid-cols-7">
-          {orderedDefs.map((d) => (
-            <button key={d.id} data-icon-id={d.id}
-              tabIndex={focusedIconId === d.id ? 0 : -1}
-              onPointerDown={(e) => beginIconDrag(e, d.id)}
-              onKeyDown={(e) => handleIconKeyDown(e, d.id)}
-              onClick={() => wm.openWindow(d.id)}
-              className="os-icon os-icon-grab"
-              aria-label={`Open ${d.title}`}
-              aria-roledescription="desktop icon">
-            </button>
-          ))}
-        </div>
-
-        {/* primary CTA + welcome — Fitts's Law: big target, high contrast, always visible */}
-        <div className="relative z-10 mx-auto mt-8 max-w-[560px] px-5 text-center font-mono">
-          <p className="text-[15px] leading-relaxed text-mist">
-            <span className="text-phosphor glow-phosphor">m4lik-os v3.0</span> — Founding Backend / AI Engineer @ Triton Sentinel
-          </p>
-          <p className="mt-2 text-[13px] text-mist">open a window, or skip straight to the good part<span className="crt-cursor ml-1.5" aria-hidden="true" /></p>
-          <button
-            ref={ctaRef}
-            onClick={() => wm.openWindow("transmission")}
-            className="mx-auto mt-5 inline-flex min-h-[52px] items-center gap-2.5 rounded-md border-2 border-phosphor bg-phosphor/10 px-8 py-3 text-[15px] font-bold tracking-[0.14em] text-phosphor glow-phosphor transition-[transform,background-color,border-color] hover:bg-phosphor/20 hover:scale-[1.03] active:scale-[0.98]"
-          >
-            ✉ INITIATE UPLINK
-          </button>
-          <p className="mt-2 text-[12px] text-mist">hiring, collab, or questions — reply within 24h</p>
-        </div>
-
-        {/* windows */}
-        {wm.windows.filter((w) => w.open && !w.minimized).map((w) => (
-          <section key={w.id}
-            data-id={w.id}
-            role="dialog"
-            aria-label={w.title}
-            tabIndex={-1}
-            ref={(el) => { if (el) el.dataset.winMounted = "1"; }}
-            className={`os-win os-window absolute outline-none ${wm.isMobile ? "os-window-mobile" : ""}`}
-            style={{
-              ...(wm.isMobile ? {} : {
-                left: 0, top: 0,
-                width: `min(${w.w}px, calc(100vw - 32px))`,
-                transform: `translate3d(${w.x ?? 0}px, ${w.y ?? 0}px, 0)`,
-              }),
-              zIndex: w.z,
-            }}
-            onPointerDown={() => wm.focusWindow(w.id)}
-            onKeyDown={(e) => { if (e.key === "Escape") { wm.closeWindow(w.id); (document.activeElement as HTMLElement)?.blur?.(); } }}
-          >
-            <div className="os-titlebar"
-              onPointerDown={(e) => wm.beginDrag(e, w.id)}>
-              <span className="truncate font-mono text-[13px] tracking-widest text-phosphor glow-phosphor-soft">{w.title}</span>
-              <span className="flex items-center gap-1.5">
-                <button onClick={() => wm.minimizeWindow(w.id)} aria-label={`Minimize ${w.title}`} className="grid h-7 w-7 [min-height:0] place-items-center rounded border border-hairline font-mono text-[12px] text-mist hover:text-paper hover:border-hairline-strong">_</button>
-                <button onClick={() => wm.closeWindow(w.id)} aria-label={`Close ${w.title}`} className="grid h-7 w-7 [min-height:0] place-items-center rounded border border-hairline font-mono text-[12px] text-mist hover:text-[#FF6B6B] hover:border-[#FF6B6B]/50">✕</button>
-              </span>
+        {mobileMenu && (<div id="mobile-nav" className="lg:hidden border-t border-hairline bg-ink/95 backdrop-blur overscroll-contain" style={{ overscrollBehavior: "contain" } as React.CSSProperties}><div className="px-4 py-3 flex flex-col">{[["Systems", "#systems"], ["Deployments", "#deployments"], ["Signal Log", "#log"], ["Transmission", "#transmission"]].map(([label, href]) => (<button key={label} onClick={() => scrollTo(href)} className="text-left font-mono text-[12px] tracking-[0.16em] text-mist hover:text-paper py-3 border-b border-hairline last:border-0">{label}</button>))}<button onClick={() => scrollTo("#transmission")} className="mt-3 inline-flex justify-center rounded-full bg-signal px-4 py-3 font-mono text-[11px] font-semibold tracking-[0.16em] text-void">INITIATE TRANSMISSION</button></div></div>)}
+      </div>
+      <main id="main" {...(mobileMenu || !bootComplete ? { inert: true } as unknown as React.HTMLAttributes<HTMLElement> : {})}>
+        <section ref={heroRef} className="relative overflow-hidden border-b border-hairline bg-void">
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 hidden lg:block"><div className="mx-auto h-full max-w-[1440px] px-6 lg:px-8 relative"><div className="absolute left-6 lg:left-8 top-0 bottom-0 w-px bg-hairline/60" /><div className="absolute right-6 lg:right-8 top-0 bottom-0 w-px bg-hairline/60" /></div></div>
+          <div className="relative mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
+            <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-6 lg:gap-8 pt-6 sm:pt-8 lg:pt-10 pb-8 sm:pb-10">
+              <div className="relative flex flex-col justify-center py-2 lg:py-6 min-w-0">
+                <div className="hero-kicker inline-flex items-center gap-2 self-start rounded-full border border-hairline bg-panel px-3 py-1.5"><span className="h-1.5 w-1.5 rounded-full bg-signal" aria-hidden="true" /><span className="font-mono text-[10px] tracking-[0.18em] text-mist">BACKEND / AI ENGINEER — MLOPS & AI INFRASTRUCTURE — INDIANAPOLIS → CHICAGO</span></div>
+                <h1 className="hero-title mt-5 sm:mt-6 font-display font-semibold leading-[0.88] tracking-[-0.032em] text-paper text-balance">
+                  <span className="sr-only">Infrastructure for intelligence that can&apos;t fail.</span>
+                  <span className="block text-display-hero" aria-hidden="true"><SplitWords text="Infrastructure" /></span>
+                  <span className="block text-display-hero text-mist-soft" aria-hidden="true"><SplitWords text="for intelligence" /></span>
+                  <span className="block text-display-hero" aria-hidden="true"><SplitWords text="that can't fail." /></span>
+                </h1>
+                <p className="hero-copy mt-4 sm:mt-5 max-w-[52ch] font-body text-[14px] sm:text-[15px] leading-[1.7] text-mist">{profile.summary}</p>
+                <div className="hero-ctas mt-6 sm:mt-7 flex flex-wrap items-center gap-4">
+                  <button onClick={() => scrollTo("#deployments")} className="inline-flex items-center gap-2 rounded-full bg-paper px-6 py-[11px] font-mono text-[11px] font-semibold tracking-[0.14em] text-void hover:bg-white active:scale-[0.96] transition-[color,background-color,border-color,transform,opacity]">VIEW DEPLOYMENTS <span aria-hidden="true">→</span></button>
+                  <button onClick={() => scrollTo("#systems")} className="inline-flex items-center gap-1 font-mono text-[11px] tracking-[0.14em] text-mist hover:text-paper underline decoration-hairline-strong underline-offset-4 decoration-from-font [text-underline-position:from-font]">VIEW SYSTEMS →</button>
+                </div>
+                <div className="hero-meta mt-6 sm:mt-8 grid grid-cols-3 gap-3 sm:gap-4 border-t border-hairline pt-4 sm:pt-5 max-w-[560px]">
+                  {[["TARGET UPTIME", "99.98%", "Edge inference — design target"], ["TARGET P95", "< 80ms", "Streamed — design target"], ["STACK", "K8s → vLLM", "Air-gapped"]].map(([k, v, d]) => (<div key={k} className="min-w-0"><div className="font-mono text-[10px] tracking-[0.16em] text-mist">{k}</div><div className="mt-1 font-display text-[16px] sm:text-[17px] font-semibold tracking-[-0.02em] text-paper tabular-nums">{v}</div><div className="font-mono text-[10px] tracking-[0.12em] text-mist/70 truncate">{d}</div></div>))}
+                </div>
+              </div>
+              <div className="relative min-h-[360px] sm:min-h-[440px] lg:min-h-[520px] flex flex-col gap-3">
+                <div className="hero-viewport relative flex-1 overflow-hidden rounded-[22px] border border-hairline-strong bg-ink shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+                  <ThreeField reduced={reduced} />
+                  <div className="pointer-events-none absolute left-3 right-3 top-3 flex items-start justify-between gap-3">
+                    <div className="rounded-full border border-white/10 bg-black/55 backdrop-blur px-3 py-1.5 flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-white/60" aria-hidden="true" /><span className="font-mono text-[10px] tracking-[0.16em] text-white">ORCHESTRATION FIELD • FIELD VIEW</span></div>
+                    <div className="hidden sm:flex rounded-full border border-white/10 bg-black/55 backdrop-blur px-3 py-1.5 font-mono text-[10px] tracking-[0.14em] text-white/80">{profile.clearance} // {profile.status}</div>
+                  </div>
+                  <div className="pointer-events-none absolute bottom-0 left-0 right-0 p-3 sm:p-4">
+                    <div className="rounded-[14px] border border-white/10 bg-black/60 backdrop-blur p-3 sm:p-3.5 flex items-center gap-3">
+                      <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/fb6415fd-bf4d-4ccf-8e9d-7ab445e99207_1600w.jpg" alt="Isometric tiny house — Aura asset, modular edge container for field node" width={96} height={72} className="h-[56px] w-[76px] sm:h-[64px] sm:w-[84px] object-cover rounded-[8px] border border-white/10 flex-none outline outline-1 outline-[oklch(1_0_0/0.1)] -outline-offset-1" loading="eager" decoding="async" />
+                      <div className="min-w-0"><div className="font-mono text-[10px] tracking-[0.16em] text-white/60">FIELD NODE 03 — MTM INDUSTRIAL</div><div className="mt-1 font-display text-[13px] font-semibold leading-tight text-white">Llama 3.2 Vision — air-gapped, no egress.</div><div className="mt-1 flex items-center gap-2 font-mono text-[10px] tracking-[0.12em] text-white/60"><span className="h-1 w-1 rounded-full bg-[#18E07A]" aria-hidden="true" /> CMMC COMPLIANT</div></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="hero-viewport-glow hidden lg:flex items-center justify-between rounded-full border border-hairline bg-panel px-4 py-2.5"><span className="font-mono text-[10px] tracking-[0.16em] text-mist">FIELD VIEW • THREE.JS • POINTER PARALLAX</span><span className="font-mono text-[10px] tracking-[0.12em] text-mist/60">{profile.location}</span></div>
+              </div>
             </div>
-            <div className="overflow-y-auto" style={{ maxHeight: wm.isMobile ? "calc(100dvh - 120px)" : `min(${winH(w.id)}px, calc(100dvh - 160px))` }}>
-              {contentFor(w.id)}
+          </div>
+        </section>
+        <section className="reveal-section relative border-b border-hairline bg-ink">
+          <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 py-10 sm:py-14 lg:py-16">
+            <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-8 lg:gap-12 items-start">
+              <div>
+                <div className="flex items-center gap-3"><span className="font-mono text-[10px] tracking-[0.18em] text-mist">01 — MANIFESTO</span><span className="reveal-hairline h-px flex-1 origin-left bg-hairline" aria-hidden="true" /></div>
+                <h2 className="mt-4 font-display text-[28px] sm:text-[34px] lg:text-[40px] font-semibold leading-[0.95] tracking-[-0.03em] text-paper text-balance">
+                  <span className="sr-only">Systems that stay up when networks go down. Built for the factory floor, not the demo.</span>
+                  <span aria-hidden="true" className="block overflow-hidden pb-1"><span className="reveal-word inline-block">Systems</span> <span className="reveal-word inline-block">that</span> <span className="reveal-word inline-block">stay</span> <span className="reveal-word inline-block">up</span></span>
+                  <span aria-hidden="true" className="block overflow-hidden pb-1 text-mist-soft"><span className="reveal-word inline-block">when</span> <span className="reveal-word inline-block">networks</span> <span className="reveal-word inline-block">go</span> <span className="reveal-word inline-block">down.</span></span>
+                </h2>
+                <div className="reveal-line mt-4 max-w-[60ch] space-y-3 font-body text-body-sm leading-[1.75] text-mist [text-wrap:pretty]"><p>I design AI infrastructure the way aerospace designs avionics — with checklists, observability, and a bias for systems that degrade gracefully. Most AI fails at the handoff to production. Mine is built for air-gapped floors, intermittent links, and operators who need answers, not dashboards.</p><p className="text-mist-soft">From graph-based security orchestration (Sentinel-Core) to CMMC-compliant vision at the edge (MTM Industrial), I ship containerized, observable services that run where the cloud can&apos;t reach.</p></div>
+                <div className="reveal-line mt-6 flex flex-wrap gap-2"><span className="inline-flex items-center gap-2 rounded-full border border-hairline bg-panel px-3 py-1.5 font-mono text-[10px] tracking-[0.14em] text-mist">K8S • DOCKER • TERRAFORM</span><span className="inline-flex items-center gap-2 rounded-full border border-hairline bg-panel px-3 py-1.5 font-mono text-[10px] tracking-[0.14em] text-mist">LANGGRAPH • FASTAPI • vLLM</span><span className="inline-flex items-center gap-2 rounded-full border border-signal/20 bg-signal-soft px-3 py-1.5 font-mono text-[10px] tracking-[0.14em] text-paper">CLEARANCE {profile.clearance}</span></div>
+              </div>
+              <div className="reveal-card relative overflow-hidden rounded-[18px] border border-hairline-strong bg-panel p-4 sm:p-5">
+                <div className="flex items-center justify-between"><span className="font-mono text-[10px] tracking-[0.18em] text-mist">OPERATOR DOSSIER</span><span className="font-mono text-[10px] tracking-[0.14em] text-[#18E07A]">● VERIFIED</span></div>
+                <div className="mt-4">
+                  <div className="min-w-0"><div className="font-display text-[16px] font-semibold tracking-[-0.02em] text-paper">{profile.realName}</div><div className="font-mono text-[11px] tracking-[0.12em] text-mist">{profile.title}</div><dl className="mt-3 space-y-2 font-mono text-[11px] leading-relaxed"><div className="flex justify-between gap-2 border-b border-hairline py-1.5"><dt className="tracking-[0.14em] text-mist">HANDLE</dt><dd className="text-paper text-right truncate">{profile.handle}</dd></div><div className="flex justify-between gap-2 border-b border-hairline py-1.5"><dt className="tracking-[0.14em] text-mist">BASE</dt><dd className="text-paper">{profile.location}</dd></div><div className="flex justify-between gap-2 border-b border-hairline py-1.5"><dt className="tracking-[0.14em] text-mist">MOBILITY</dt><dd className="text-paper">{profile.openToRelocation} ✓</dd></div><div className="flex justify-between gap-2 py-1.5"><dt className="tracking-[0.14em] text-mist">STATUS</dt><dd className="inline-flex items-center gap-1.5 text-paper"><span className="h-1.5 w-1.5 rounded-full bg-[#18E07A]" aria-hidden="true" />{profile.status}</dd></div></dl><div className="mt-3 flex gap-2"><a href={`mailto:${profile.email}`} className="flex-1 inline-flex justify-center rounded-full bg-paper px-3 py-2 font-mono text-[10px] font-semibold tracking-[0.14em] text-void hover:bg-white transition-colors">EMAIL</a><a href={profile.linkedin} target="_blank" rel="noreferrer" className="flex-1 inline-flex justify-center rounded-full border border-hairline px-3 py-2 font-mono text-[10px] tracking-[0.14em] text-mist hover:text-paper hover:border-hairline-strong transition-colors">LINKEDIN</a></div></div>
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-2 border-t border-hairline pt-4">{[["DEPLOYMENTS", "4", "production"], ["NODES", "Air-gapped", "zero egress"], ["OBSERVABILITY", "Langfuse", "New Relic"]].map(([k, v, s]) => (<div key={k} className="rounded-[10px] border border-hairline bg-void px-3 py-2.5"><div className="font-mono text-[9px] tracking-[0.16em] text-mist">{k}</div><div className="mt-1 font-display text-[13px] font-semibold text-paper leading-none">{v}</div><div className="font-mono text-[9px] tracking-[0.12em] text-mist/70">{s}</div></div>))}</div>
+              </div>
             </div>
-          </section>
-        ))}
+          </div>
+        </section>
+        <section id="systems" className="reveal-section relative border-b border-hairline bg-void">
+          <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 py-10 sm:py-14 lg:py-16">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div><div className="flex items-center gap-3"><span className="font-mono text-[10px] tracking-[0.18em] text-mist">02 — SYSTEMS</span><span className="reveal-hairline hidden sm:block h-px w-24 origin-left bg-hairline" aria-hidden="true" /></div><h2 className="mt-3 font-display text-heading-section tracking-[-0.03em] text-paper"><span className="sr-only">Measured capabilities. No vanity metrics.</span><span aria-hidden="true" className="overflow-hidden inline-block"><span className="reveal-word inline-block">Measured</span></span> <span aria-hidden="true" className="overflow-hidden inline-block text-mist-soft"><span className="reveal-word inline-block">capabilities.</span></span></h2><p className="reveal-line mt-2 max-w-[56ch] font-body text-[14px] leading-[1.6] text-mist">Four instrument panels. Each skill is bench-tested in production — not a self-assessment.</p></div><div className="reveal-line hidden lg:flex items-center gap-2 rounded-full border border-hairline bg-panel px-3 py-1.5 font-mono text-[10px] tracking-[0.14em] text-mist"><span className="h-1.5 w-1.5 rounded-full bg-cyan" aria-hidden="true" /> CALIBRATED • PRODUCTION-PROVEN</div>
+            </div>
+            <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {skillCategories.map((cat, idx) => (<div key={cat.category} className="reveal-item group relative border-b border-hairline bg-transparent py-5 first:border-t first:border-hairline"><div className="flex items-start justify-between gap-3"><div className="flex items-center gap-3"><span className="grid h-8 w-8 place-items-center rounded-[9px] border border-hairline bg-void font-mono text-[13px] text-mist group-hover:border-cyan/30 group-hover:text-cyan transition-colors">{cat.icon}</span><div><div className="font-mono text-[10px] tracking-[0.16em] text-mist">PANEL {String(idx + 1).padStart(2, "0")}</div><div className="font-display text-[13px] font-semibold tracking-[-0.01em] text-paper">{cat.category}</div></div></div><span className="font-mono text-[10px] tracking-[0.14em] text-mist/60">{cat.skills.length} INSTRUMENTS</span></div><div className="mt-4 space-y-2.5">{cat.skills.map((s) => (<div key={s.name} className="group/row flex items-center gap-3"><div className="min-w-0 flex-1"><div className="flex items-baseline justify-between gap-2"><span className="font-body text-[13px] font-medium text-paper truncate">{s.name}</span><span className="font-mono text-[10px] tracking-[0.12em] text-mist shrink-0">LVL {s.level}/5</span></div><div className="mt-1.5 h-[3px] w-full rounded-full bg-void border border-hairline overflow-hidden"><div className="h-full rounded-full bg-gradient-to-r from-cyan to-cyan/60 transition-[color,background-color,border-color,transform,opacity]" style={{ width: `${(s.level / 5) * 100}%` }} aria-hidden="true" /></div></div></div>))}</div></div>))}
+            </div>
+          </div>
+        </section>
+        <section id="deployments" className="reveal-section deploy-track relative border-b border-hairline bg-ink">
+          <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 py-10 sm:py-14 lg:py-16">
+            <div className="flex flex-wrap items-end justify-between gap-4"><div><div className="flex items-center gap-3"><span className="font-mono text-[10px] tracking-[0.18em] text-mist">03 — SELECTED DEPLOYMENTS</span><span className="reveal-hairline hidden sm:block h-px w-24 origin-left bg-hairline" aria-hidden="true" /></div><h2 className="mt-3 font-display text-heading-section tracking-[-0.03em] text-paper"><span className="sr-only">Shipped systems, not slides.</span><span aria-hidden="true" className="overflow-hidden inline-block"><span className="reveal-word inline-block">Shipped</span></span> <span aria-hidden="true" className="overflow-hidden inline-block text-mist-soft"><span className="reveal-word inline-block">systems,</span></span> <span aria-hidden="true" className="overflow-hidden inline-block"><span className="reveal-word inline-block">not</span></span> <span aria-hidden="true" className="overflow-hidden inline-block"><span className="reveal-word inline-block">slides.</span></span></h2></div><div className="reveal-line font-mono text-[11px] tracking-[0.14em] text-mist">04 CASES • 2024—2026</div></div>
+            <div className="mt-6 h-px w-full bg-hairline overflow-hidden rounded-full" aria-hidden="true"><div className="deploy-progress-fill h-full w-full origin-left bg-gradient-to-r from-cyan via-signal to-cyan" style={{ transform: "scaleX(0)" }} /></div>
+            <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5">
+              {projects.map((p, i) => (<article key={p.codename} className={`reveal-card group relative overflow-hidden rounded-[18px] border border-hairline bg-panel hover:border-hairline-strong transition-colors flex flex-col ${i === 0 ? "lg:col-span-7" : i === 1 ? "lg:col-span-5" : "lg:col-span-6"}`}><div className="absolute left-0 top-0 h-px w-full bg-gradient-to-r from-transparent via-cyan/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" /><div className="p-4 sm:p-5 flex-1 flex flex-col"><div className="flex items-start justify-between gap-3"><div className="flex items-center gap-2"><span className="font-mono text-[10px] tracking-[0.16em] text-mist">0{i + 1}</span><span className="h-1 w-1 rounded-full bg-hairline-strong" aria-hidden="true" /><span className="font-mono text-[10px] tracking-[0.16em] text-mist">{p.codename}</span></div><span className={`inline-flex items-center rounded-full border px-2.5 py-1 font-mono text-[10px] tracking-[0.12em] ${p.status === "ACTIVE" ? "border-[#18E07A]/20 bg-[#18E07A]/10 text-[#18E07A]" : p.status === "DEPLOYED" ? "border-cyan/20 bg-cyan-soft text-cyan" : "border-hairline bg-void text-mist"}`}>{p.status}</span></div><h3 className="mt-3 font-display text-[18px] sm:text-[19px] font-semibold leading-tight tracking-[-0.02em] text-paper">{p.name}</h3><p className="mt-2 font-body text-[13px] leading-[1.6] text-mist line-clamp-3">{p.description}</p><div className="mt-4 flex flex-wrap gap-1.5">{p.techStack.map((t) => (<span key={t} className="inline-flex rounded-full border border-hairline bg-void px-2.5 py-1 font-mono text-[10px] tracking-[0.12em] text-mist">{t}</span>))}</div><div className="mt-5 flex items-center gap-3 pt-4 border-t border-hairline"><a href={p.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-full bg-paper px-4 py-2 font-mono text-[10px] font-semibold tracking-[0.14em] text-void hover:bg-white transition-colors">OPEN REPO <span aria-hidden="true">↗</span></a><span className="font-mono text-[10px] tracking-[0.12em] text-mist/60 hidden sm:inline">github.com/malikoliver25</span></div></div><div className="h-[96px] sm:h-[110px] relative overflow-hidden border-t border-hairline bg-void"><img src={i === 0 ? "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/724142aa-44a6-48d3-9cf3-761e00d05b78_1600w.jpg" : i === 1 ? "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/5ee0a38a-b5d3-4531-8793-98beed4af162_1600w.jpg" : i === 2 ? "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/e534354d-c5f2-4399-a1d9-2f50338e8c47_1600w.jpg" : "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/005600e5-f6ab-4e59-bc86-eaeb02797dfa_1600w.jpg"} alt="" aria-hidden="true" className="h-full w-full object-cover opacity-70 grayscale group-hover:grayscale-0 group-hover:opacity-90 transition-[color,background-color,border-color,transform,opacity] duration-500" loading="lazy" /><div className="absolute inset-0 bg-gradient-to-t from-panel via-transparent to-transparent" aria-hidden="true" /><div className="absolute bottom-2 left-3 right-3 flex items-center justify-between"><span className="font-mono text-[10px] tracking-[0.14em] text-white/70">PREVIEW • {p.codename}</span><span className="h-px flex-1 mx-3 bg-white/15 hidden sm:block" aria-hidden="true" /><span className="font-mono text-[10px] tracking-[0.12em] text-white/60">PRODUCTION-GRADE</span></div></div></article>))}
+            </div>
+            <div className="reveal-line mt-4 flex flex-wrap items-center gap-3 rounded-[12px] border border-hairline bg-void px-4 py-3 [text-wrap:pretty]"><span className="font-mono text-[10px] tracking-[0.16em] text-mist">SYSTEM NOTE</span><span className="h-3 w-px bg-hairline hidden sm:block" aria-hidden="true" /><span className="font-body text-[13px] leading-relaxed text-mist">All repos are live. No mock dashboards, no placeholder case studies — clone, read the README, run the stack.</span></div>
+          </div>
+        </section>
+        <section id="log" className="reveal-section relative border-b border-hairline bg-void">
+          <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 py-10 sm:py-14 lg:py-16">
+            <div className="grid lg:grid-cols-[0.9fr_1.1fr] gap-8 lg:gap-10">
+              <div><div className="flex items-center gap-3"><span className="font-mono text-[10px] tracking-[0.18em] text-mist">04 — SIGNAL LOG</span><span className="reveal-hairline h-px flex-1 origin-left bg-hairline" aria-hidden="true" /></div><h2 className="mt-3 font-display text-heading-section tracking-[-0.03em] text-paper"><span className="sr-only">Traceable history. Verifiable claims.</span><span aria-hidden="true" className="block overflow-hidden"><span className="reveal-word inline-block">Traceable</span> <span className="reveal-word inline-block">history.</span></span><span aria-hidden="true" className="block overflow-hidden text-mist-soft"><span className="reveal-word inline-block">Verifiable</span> <span className="reveal-word inline-block">claims.</span></span></h2><p className="reveal-line mt-3 max-w-[48ch] font-body text-[14px] leading-[1.65] text-mist">Certifications, deployments, and system events — timestamped like an observability feed, not a resume.</p><div className="reveal-card mt-6 rounded-[14px] border border-hairline bg-panel p-4"><div className="flex items-center gap-2 font-mono text-[10px] tracking-[0.14em] text-mist"><span className="h-1.5 w-1.5 rounded-full bg-signal animate-pulse" aria-hidden="true" /> LIVE FEED • {new Date().getFullYear()} OPERATIONS</div><div className="mt-3 grid grid-cols-3 gap-2">{[["CERTS", String(certifications.length), "verified"], ["REGION", "IND → CHI", "mobile"], ["AVAILABILITY", "Q2 2026", "open to relocation"]].map(([k, v, s]) => (<div key={k} className="rounded-[10px] border border-hairline bg-void px-3 py-2.5"><div className="font-mono text-[9px] tracking-[0.16em] text-mist">{k}</div><div className="mt-1 font-display text-[13px] font-semibold text-paper">{v}</div><div className="font-mono text-[9px] tracking-[0.12em] text-mist/70">{s}</div></div>))}</div></div></div>
+              <div className="reveal-item relative border-y border-hairline bg-transparent overflow-hidden"><div className="flex items-center justify-between border-b border-hairline px-0 sm:px-1 py-3 bg-transparent"><span className="font-mono text-[10px] tracking-[0.16em] text-mist">EVENT STREAM • CHRONOLOGICAL</span><span className="font-mono text-[10px] tracking-[0.12em] text-mist/60">{certifications.length} EVENTS</span></div><div className="max-h-[360px] overflow-auto divide-y divide-hairline overscroll-contain pr-1">{certifications.map((c: Certification) => (<div key={`${c.name}-${c.issued}`} className="group flex gap-3 px-4 py-3.5 hover:bg-void/60 transition-colors"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-hairline-strong group-hover:bg-cyan shrink-0 transition-colors" aria-hidden="true" /><div className="min-w-0 flex-1"><div className="flex flex-wrap items-baseline gap-2"><span className="font-display text-[13px] font-semibold text-paper">{c.name}</span>{c.verified && <span className="inline-flex rounded-full border border-[#18E07A]/20 bg-[#18E07A]/10 px-2 py-0.5 font-mono text-[9px] tracking-[0.12em] text-[#18E07A]">VERIFIED</span>}</div><div className="font-mono text-[11px] tracking-[0.10em] text-mist">{c.issuer} • {c.issued}</div></div><span className="font-mono text-[10px] tracking-[0.12em] text-mist/50 hidden sm:block shrink-0">{c.id ? `#${c.id.slice(0, 8)}` : "—"}</span></div>))}<div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-void to-transparent opacity-60" aria-hidden="true" />{[["DEPLOYMENT", "MTM Industrial AI — air-gapped portal live", "2025-11"], ["DEPLOYMENT", "Sentinel-Core — graph orchestration engine", "2025-09"], ["DEPLOYMENT", "Portfolio Assistant — async FastAPI orchestration", "2025-07"]].map(([type, title, date]) => (<div key={title} className="group flex gap-3 px-4 py-3.5 hover:bg-void/60 transition-colors"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-signal shrink-0" aria-hidden="true" /><div className="min-w-0 flex-1"><div className="font-display text-[13px] font-semibold text-paper">{title}</div><div className="font-mono text-[11px] tracking-[0.10em] text-mist">{type}</div></div><span className="font-mono text-[10px] tracking-[0.12em] text-mist/50 shrink-0">{date}</span></div>))}</div></div>
+            </div>
+          </div>
+        </section>
+        <section id="transmission" className="reveal-section relative overflow-hidden border-b border-hairline bg-ink">
+          <div className="absolute inset-0 pointer-events-none opacity-[0.04]" aria-hidden="true" style={{ backgroundImage: "linear-gradient(#1C232E 1px, transparent 1px), linear-gradient(90deg, #1C232E 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
+          <div className="relative mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 py-10 sm:py-14 lg:py-16">
+            <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-6 lg:gap-8 items-start">
+              <div><div className="flex items-center gap-3"><span className="font-mono text-[10px] tracking-[0.18em] text-mist">05 — TRANSMISSION</span><span className="reveal-hairline h-px flex-1 origin-left bg-hairline" aria-hidden="true" /></div><h2 className="mt-3 font-display text-[30px] sm:text-[38px] lg:text-[42px] font-semibold leading-[0.92] tracking-[-0.03em] text-paper text-balance"><span className="sr-only">Send a signal, not a form letter.</span><span aria-hidden="true" className="block overflow-hidden"><span className="reveal-word inline-block">Send</span> <span className="reveal-word inline-block">a</span> <span className="reveal-word inline-block">signal,</span></span><span aria-hidden="true" className="block overflow-hidden text-mist-soft"><span className="reveal-word inline-block">not</span> <span className="reveal-word inline-block">a</span> <span className="reveal-word inline-block">form</span> <span className="reveal-word inline-block">letter.</span></span></h2><p className="reveal-line mt-3 max-w-[52ch] font-body text-[14px] leading-[1.65] text-mist">Hiring for an air-gapped deployment, model-serving bottleneck, or agentic workflow that needs to stay deterministic? Initiate a transmission — I reply within 24 hours.</p><div className="reveal-line mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-[560px]"><a href={`mailto:${profile.email}`} className="group flex items-center justify-between rounded-[14px] border border-hairline bg-panel px-4 py-3 hover:border-hairline-strong transition-colors"><span className="font-mono text-[11px] tracking-[0.12em] text-mist">EMAIL</span><span className="font-body text-[13px] font-medium text-paper truncate ml-3 group-hover:text-cyan transition-colors">{profile.email}</span></a><a href={profile.linkedin} target="_blank" rel="noreferrer" className="group flex items-center justify-between rounded-[14px] border border-hairline bg-panel px-4 py-3 hover:border-hairline-strong transition-colors"><span className="font-mono text-[11px] tracking-[0.12em] text-mist">LINKEDIN</span><span className="font-body text-[13px] font-medium text-paper group-hover:text-cyan transition-colors">Open profile ↗</span></a><div className="sm:col-span-2 flex items-center gap-3 rounded-[12px] border border-signal/15 bg-signal-soft px-4 py-3"><span className="h-2 w-2 rounded-full bg-signal animate-pulse" aria-hidden="true" /><span className="font-mono text-[11px] tracking-[0.14em] text-paper">RELOCATION OPEN • {profile.openToRelocation} — REMOTE / HYBRID / ON-SITE</span></div></div></div>
+              <TransmissionForm />
+            </div>
+          </div>
+        </section>
       </main>
-
-      {/* taskbar */}
-      <footer className="os-pill fixed inset-x-0 bottom-0 z-50 border-x-0 border-b-0">
-        <div className="mx-auto flex h-[56px] max-w-[1440px] items-center gap-2 overflow-x-auto px-3 sm:px-5">
-          <span className="hidden shrink-0 font-mono text-[13px] text-phosphor glow-phosphor-soft sm:inline">TASKS:</span>
-          {wm.windows.filter((w) => w.open).length === 0 && (
-            <span className="font-mono text-[12px] text-mist">none running</span>
-          )}
-          {wm.windows.filter((w) => w.open).map((w) => (
-            <button key={w.id} onClick={() => wm.activateWindow(w.id)}
-              aria-pressed={w.minimized}
-              aria-label={`${w.minimized ? "Restore" : w.z === Math.max(...wm.windows.filter(x => x.open).map(x => x.z), 0) ? "Minimize" : "Focus"} ${w.title}`}
-              className={`os-taskchip shrink-0 font-mono text-[12px] ${w.minimized ? "text-mist" : "text-phosphor"}`}>
-              <span aria-hidden="true">{WINDOW_DEFS.find((d) => d.id === w.id)?.icon}</span>
-              <span className="truncate">{w.title}</span>
-            </button>
-          ))}
+      <footer className="border-t border-hairline bg-void" {...(mobileMenu ? { inert: true } as unknown as React.HTMLAttributes<HTMLElement> : {})}>
+        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+          <div className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr_0.8fr]">
+            <div><div className="flex items-center gap-3"><span className="grid h-7 w-7 place-items-center rounded-[8px] border border-hairline bg-panel font-mono text-[10px] font-semibold tracking-[0.14em] text-mist">M/O</span><span className="font-display text-[14px] font-semibold tracking-[-0.01em] text-paper">Malik Oliver</span><span className="hidden sm:inline h-3 w-px bg-hairline" aria-hidden="true" /><span className="hidden sm:inline font-mono text-[10px] tracking-[0.16em] text-mist">BACKEND & AI ENGINEER — MLOPS & AI INFRASTRUCTURE</span></div><p className="mt-3 max-w-[48ch] font-body text-[13px] leading-[1.6] text-mist">Backend & AI systems engineering for intelligence that can&apos;t fail — containerized, observable, and proven in air-gapped environments.</p><div className="mt-4 flex flex-wrap gap-2 font-mono text-[10px] tracking-[0.12em] text-mist/60"><span>© {new Date().getFullYear()} Malik Oliver</span><span aria-hidden="true">•</span><span>Built with GSAP + Lenis + Three.js</span><span aria-hidden="true">•</span><span className="hidden sm:inline">No trackers. No fluff.</span></div></div>
+            <div><div className="font-mono text-[10px] tracking-[0.18em] text-mist">NAVIGATE</div><div className="mt-3 grid gap-1.5">{[["Systems", "#systems"], ["Deployments", "#deployments"], ["Signal Log", "#log"], ["Transmission", "#transmission"]].map(([l, h]) => (<button key={l} onClick={() => scrollTo(h)} className="text-left font-body text-[13px] text-mist hover:text-paper transition-colors">{l}</button>))}</div></div>
+            <div><div className="font-mono text-[10px] tracking-[0.18em] text-mist">CONNECT</div><div className="mt-3 grid gap-1.5 font-body text-[13px]"><a href={profile.github} target="_blank" rel="noreferrer" className="text-mist hover:text-paper transition-colors">View GitHub profile ↗</a><a href={profile.linkedin} target="_blank" rel="noreferrer" className="text-mist hover:text-paper transition-colors">View LinkedIn profile ↗</a><a href={`mailto:${profile.email}`} aria-label="Email Malik Oliver" className="text-mist hover:text-paper transition-colors">{profile.email}</a><span className="font-mono text-[11px] tracking-[0.12em] text-mist/60">{profile.phone}</span></div></div>
+          </div>
+          <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-6"><div className="font-mono text-[10px] tracking-[0.14em] text-mist/60">SPEC: 1440px frame • Hairline #1C232E • Display Space Grotesk • Mono JetBrains Mono • Motion GSAP + native scroll</div><div className="flex items-center gap-2 font-mono text-[10px] tracking-[0.12em] text-mist/50"><span className="h-1.5 w-1.5 rounded-full bg-[#18E07A]" aria-hidden="true" /> ALL SYSTEMS NOMINAL</div></div>
         </div>
       </footer>
-
       <AgentDock enabled={bootComplete} />
+      <style>{`@media (prefers-reduced-motion: reduce) { .split-word { transform: none !important; } }`}</style>
     </div>
   );
 }
