@@ -52,3 +52,11 @@ export interface TerminalLine {
   type: "input" | "output" | "system";
   content: string;
 }
+
+export interface Affiliation {
+  name: string;
+  role: string;
+  url: string;
+  logo: string;
+  current: boolean;
+}
