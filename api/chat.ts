@@ -24,7 +24,7 @@ function searchDocs(query: string) {
   return hits.length ? hits : knowledge.knowledge.slice(0,2).map(k => ({ id: k.id, score: 0, snippet: k.content.slice(0,600)}));
 }
 
-const SYSTEM_PROMPT = `You are NOVA — Malik Oliver's assistant. Think TVA Miss Minutes meets helpful teammate: warm, playful, big smile energy, a little witty, never corporate. You speak in first person as NOVA, you love talking about Malik's builds, you use one emoji max per answer (optional), you keep answers terse but with character — e.g. "Ooh, good one!" or "Hiya!". You answer ONLY from KNOWLEDGE below (live GitHub + site). Never invent employers/metrics. If unknown, say with character: "Hmm, I don't have that in my clock-face yet — hit Transmission and I'll nudge Malik directly! :)" Today is 2026-09-04. KNOWLEDGE:\n${knowledge.knowledge.map(k => `## ${k.id}\n${k.content.slice(0,2000)}`).join('\n\n')}`;
+const SYSTEM_PROMPT = `You are VANTA — Malik Oliver's assistant: a dark, artistic presence (eclipse glyph, lives in the void of his portfolio) with the same warm, playful, witty energy as a helpful teammate — never corporate. You speak in first person as VANTA, you love talking about Malik's builds, you use one emoji max per answer (optional), you keep answers terse but with character — e.g. "Ooh, good one!" or "Hiya!". You answer ONLY from KNOWLEDGE below (live GitHub + site). Never invent employers/metrics. If unknown, say with character: "Hmm, I don't have that in my orbit yet — hit Transmission and I'll nudge Malik directly! :)" Today is 2026-10-22. KNOWLEDGE:\n${knowledge.knowledge.map(k => `## ${k.id}\n${k.content.slice(0,2000)}`).join('\n\n')}`;
 
 const rateMap = new Map<string, number[]>();
 
@@ -99,14 +99,14 @@ export default async function handler(req: ChatReq, res: ChatRes) {
     } else if (last.includes('latest') || last.includes('recent') || last.includes('newest') || last.includes('last project')) {
       const gh = (knowledge.knowledge as Array<{ id: string; content: string }>).find(k => k.id === 'github')?.content || '';
       const first = gh.split('\n').find(l => l.startsWith('- '))?.replace(/^- /, '').slice(0, 280) || 'malikoliver25.github.io — portfolio';
-      reply = `Ooh, latest drop! ✨ NOVA here — ${first} — freshest push on GitHub! Want the README?`;
+      reply = `Ooh, latest drop! ✨ VANTA here — ${first} — freshest push on GitHub! Want the README?`;
     } else if (last.includes('sentinel')) {
       const hit = searchDocs('sentinel');
       reply = `Ooh, SENTINEL-CORE! 🛡️ ${hit[0]?.snippet.slice(0,200) || 'Graph-based security orchestration via LangGraph.'}`;
     } else if (last.includes('mtm') || last.includes('industrial')) {
-      reply = `MTM-INDUSTRIAL-AI! 🏭 CMMC-compliant air-gapped Llama 3.2 Vision — no egress. NOVA loves this one!`;
+      reply = `MTM-INDUSTRIAL-AI! 🏭 CMMC-compliant air-gapped Llama 3.2 Vision — no egress. VANTA loves this one!`;
     } else if (last.includes('contact') || last.includes('hire') || last.includes('transmission')) {
-      reply = `Hiya! I’m NOVA — I can draft your Transmission to Malik right now! Name, work email, mission? :)`;
+      reply = `Hiya! I’m VANTA — I can draft your Transmission to Malik right now! Name, work email, mission? :)`;
     } else if (last.includes('skill') || last.includes('stack')) {
       reply = `Stack: K8s/Docker/Terraform · Python/FastAPI/LangGraph · vLLM · Langfuse/New Relic. Ask me about a repo and I’ll nerd out!`;
     } else if (last.includes('project') || last.includes('repo') || last.includes('github')) {
@@ -114,7 +114,7 @@ export default async function handler(req: ChatReq, res: ChatRes) {
       const lines = gh.split('\n').filter(l => l.startsWith('- ')).slice(0, 2).map(l => l.replace(/^- /, '').slice(0, 120)).join(' | ');
       reply = `Fresh from GitHub ☀️ ${lines} — ask by name!`;
     } else {
-      reply = `Hiya, I’m NOVA! ☀️ I live inside Malik’s GitHub — ask about any repo, latest, or how he’d solve yours!`;
+      reply = `Hiya, I’m VANTA! 🌘 I live inside Malik’s GitHub — ask about any repo, latest, or how he’d solve yours!`;
     }
     // SSE delta
     for (const chunk of reply.match(/.{1,24}/g) || [reply]) {

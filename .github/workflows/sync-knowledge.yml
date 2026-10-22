@@ -1,4 +1,4 @@
-name: Sync NOVA Knowledge (GitHub)
+name: Sync VANTA Knowledge (GitHub)
 
 on:
   push:
@@ -34,5 +34,5 @@ jobs:
           git config user.name "nova-sync"
           git config user.email "nova-sync@users.noreply.github.com"
           git add src/data/agent-knowledge.json
-          git commit -m "chore: sync NOVA knowledge from GitHub [skip ci]"
+          git commit -m "chore: sync VANTA knowledge from GitHub [skip ci]"
           git push

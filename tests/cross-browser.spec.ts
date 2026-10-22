@@ -44,7 +44,7 @@ test.describe('P0 critical paths (run on every PR)', () => {
     await expect(page.getByText(/transmission queued/i).first()).toBeVisible();
   });
 
-  test('NOVA dock opens, chats, and closes (WebKit vs Chromium agnostic)', async ({ page }) => {
+  test('VANTA dock opens, chats, and closes (WebKit vs Chromium agnostic)', async ({ page }) => {
     await page.goto('/');
     const pill = page.getByRole('button', { name: /nova/i }).first();
     await pill.click();
@@ -52,7 +52,7 @@ test.describe('P0 critical paths (run on every PR)', () => {
     const input = page.getByPlaceholder(/ask nova/i);
     await input.fill('what does malik do');
     await page.keyboard.press('Enter');
-    // NOVA replies via localMockReply — assert content visible, not streaming internals
+    // VANTA replies via localMockReply — assert content visible, not streaming internals
     await expect(page.getByText(/MLOps & AI Infrastructure Engineer/i).first()).toBeVisible({ timeout: 10_000 });
     await page.getByRole('button', { name: /close chat/i }).first().click().catch(async () => {
       await page.keyboard.press('Escape');
@@ -83,7 +83,7 @@ test.describe('WebKit / Firefox divergences (same test, branched only when genui
 
   test('backdrop overlay remains readable (Firefox backdrop-filter fallback)', async ({ page }) => {
     await page.goto('/');
-    // Open mobile menu or NOVA dialog that uses backdrop-blur / overlay
+    // Open mobile menu or VANTA dialog that uses backdrop-blur / overlay
     const pill = page.getByRole('button', { name: /nova/i }).first();
     await pill.click().catch(() => {});
     const dialog = page.getByRole('dialog').first();

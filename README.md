@@ -1,13 +1,13 @@
 # voidprotocol-labs — Malik Oliver Portfolio
 
-Infrastructural portfolio for **Backend & AI Engineer — MLOps & Air-Gapped AI Infrastructure** (Malik Oliver — Indianapolis, open to Chicago). Dark editorial system (Void #06080B / Paper #EEF2F7, Space Grotesk / JetBrains Mono), GSAP `ScrollTrigger` reveals, Three.js field, and **NOVA** — a TVA Miss Minutes-style assistant that answers only from live GitHub + site knowledge.
+Infrastructural portfolio for **Backend & AI Engineer — MLOps & Air-Gapped AI Infrastructure** (Malik Oliver — Indianapolis, open to Chicago). Dark editorial system (Void #06080B / Paper #EEF2F7, Space Grotesk / JetBrains Mono), GSAP `ScrollTrigger` reveals, Three.js field, and **VANTA** — a dark eclipse-glyph assistant that answers only from live GitHub + site knowledge.
 
 > Live: `https://voidprotocol-labs.github.io` (GitHub Pages) · API: `https://malikoliver25githubio.vercel.app/api/chat` (Vercel)
 
 ## What it does
 
 - **Systems / Deployments / Signal Log** — project cards, verified stack, chronology
-- **NOVA** (`src/hooks/useAgentChat.ts` + `api/chat.ts`) — chat dock, deterministic `localMockReply` fallback when no LLM key, streaming via Groq/Gemini/Anthropic when keys present; never invents employers/metrics
+- **VANTA** (`src/hooks/useAgentChat.ts` + `api/chat.ts`) — chat dock, deterministic `localMockReply` fallback when no LLM key, streaming via Groq/Gemini/Anthropic when keys present; never invents employers/metrics
 - **Transmission** (`#transmission`) — contact form (mock-queued, no SMTP in static build)
 - **Three.js / GSAP** — field nodes, hairline draws, `is-offscreen` pause, `IntersectionObserver 0.01`
 
@@ -50,7 +50,7 @@ Only `VITE_` vars ship to the browser. Never put `GROQ_API_KEY` etc. in `VITE_`.
 src/
   App.tsx              39KB — sections + scroll/ boot wiring
   components/          AgentDock, TransmissionForm, Terminal, Projects, ThreeField …
-  hooks/useAgentChat.ts  NOVA chat + localMockReply (deterministic, testable)
+  hooks/useAgentChat.ts  VANTA chat + localMockReply (deterministic, testable)
   data/agent-knowledge.json  live GitHub sync (scripts/sync-github.mjs)
 api/chat.ts            Vercel handler — rate limit 20/min, CORS, Groq→Gemini→Anthropic fallback
 scripts/               build-knowledge.mjs, sync-github.mjs, detect_injection.py, mobile_nova_visual.py
@@ -65,7 +65,7 @@ docs/                  adr-001, browser-matrix.md, browser-issues.md
 | **Cross-browser P0** (every PR) | `npx playwright test --project=chromium --project=webkit --project=mobile-chrome --project=mobile-safari` | `ubuntu-latest` CI (`docs/browser-matrix.md` next-review 2026-12-04) |
 | **Full matrix** | `npx playwright test` (7 projects) | nightly |
 | **Typecheck** | `npm run typecheck` | pre-push |
-| **Mobile visual smoke** (local) | `npm run test:mobile-visual` (Pixel 7 / iPhone 15 / iPad Pro 11 viewports, NOVA + Transmission) | `mac12` helper — complements P0 where webkit 1.62.1 unavailable |
+| **Mobile visual smoke** (local) | `npm run test:mobile-visual` (Pixel 7 / iPhone 15 / iPad Pro 11 viewports, VANTA + Transmission) | `mac12` helper — complements P0 where webkit 1.62.1 unavailable |
 | **Agentic smoke** | `node scripts/run-agent-goal.mjs --config agent-run.config.json` → `result.json {passed:bool}` | `pull_request` (`agentic-smoke.yml` gates on `jq .passed`) |
 | **Injection detector** | `python3 scripts/detect_injection.py --selftest` | pre-agent gate |
 

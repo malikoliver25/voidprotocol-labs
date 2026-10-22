@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "knowledge:build": "node scripts/build-knowledge.mjs",
     "knowledge:sync": "node scripts/sync-github.mjs",
-    "test:mobile-visual": "python3 /Users/malikoliver/.agents/skills/webapp-testing/scripts/with_server.py --server \"npm run dev\" --port 5173 -- python3 scripts/mobile_nova_visual.py"
+    "test:mobile-visual": "python3 /Users/malikoliver/.agents/skills/webapp-testing/scripts/with_server.py --server \"npm run dev\" --port 5173 -- python3 scripts/mobile_vanta_visual.py"
   },
   "dependencies": {
     "gsap": "^3.15.0",

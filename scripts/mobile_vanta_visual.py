@@ -28,8 +28,8 @@ with sync_playwright() as p:
             box = hero.bounding_box()
             print(f" hero box: {box}")
             # Nav
-            nav = page.get_by_role("button", name="NOVA — ASK ME!").first
-            print(f" NOVA pill visible: {nav.is_visible(timeout=3000)} box={nav.bounding_box()}")
+            nav = page.get_by_role("button", name="VANTA — ASK ME!").first
+            print(f" VANTA pill visible: {nav.is_visible(timeout=3000)} box={nav.bounding_box()}")
             # Check no horizontal overflow at 320-412 width
             body_width = page.evaluate("() => document.body.scrollWidth")
             viewport_w = vp['width']
@@ -38,28 +38,28 @@ with sync_playwright() as p:
         except Exception as e:
             print(f" hero/nav check error: {e}")
 
-        # NOVA usability on this viewport
+        # VANTA usability on this viewport
         try:
-            # Open NOVA
-            pill = page.get_by_role("button", name="NOVA — ASK ME!")
+            # Open VANTA
+            pill = page.get_by_role("button", name="VANTA — ASK ME!")
             if not pill.is_visible(timeout=2000):
-                pill = page.get_by_role("button", name="NOVA").first
+                pill = page.get_by_role("button", name="VANTA").first
             pill.click()
             page.wait_for_timeout(500)
-            dialog = page.get_by_role("dialog", name="NOVA").first
+            dialog = page.get_by_role("dialog", name="VANTA").first
             if not dialog.is_visible(timeout=3000):
                 dialog = page.locator('[role="dialog"]').first
-            print(f" NOVA dialog visible: {dialog.is_visible(timeout=3000)}")
+            print(f" VANTA dialog visible: {dialog.is_visible(timeout=3000)}")
             # Input visible and not clipped?
-            inp = page.get_by_placeholder("Ask NOVA about your next project…")
-            print(f" NOVA input visible: {inp.is_visible(timeout=3000)} box={inp.bounding_box()}")
+            inp = page.get_by_placeholder("Ask VANTA about your next project…")
+            print(f" VANTA input visible: {inp.is_visible(timeout=3000)} box={inp.bounding_box()}")
             inp.fill("what does malik do")
             page.keyboard.press("Enter")
             page.wait_for_timeout(1500)
             ans = page.get_by_text("MLOps & AI Infrastructure Engineer").first
-            print(f" NOVA answer visible: {ans.is_visible(timeout=5000)}")
+            print(f" VANTA answer visible: {ans.is_visible(timeout=5000)}")
             # Screenshot per viewport
-            path = f"/tmp/mobile-nova-{name.replace(' ','_').replace('(','').replace(')','')}.png"
+            path = f"/tmp/mobile-vanta-{name.replace(' ','_').replace('(','').replace(')','')}.png"
             page.screenshot(path=path, full_page=False)
             print(f" screenshot {path}")
             # Close
@@ -68,8 +68,8 @@ with sync_playwright() as p:
             except:
                 page.keyboard.press("Escape")
         except Exception as e:
-            print(f" NOVA error {name}: {e}")
-            page.screenshot(path=f"/tmp/mobile-nova-{name}-error.png", full_page=True)
+            print(f" VANTA error {name}: {e}")
+            page.screenshot(path=f"/tmp/mobile-vanta-{name}-error.png", full_page=True)
 
         # Transmission form usable at this width
         try:
@@ -91,4 +91,4 @@ with sync_playwright() as p:
 
         ctx.close()
     browser.close()
-    print("\n[done] mobile/tablet NOVA visual checks complete")
+    print("\n[done] mobile/tablet VANTA visual checks complete")

@@ -3,7 +3,7 @@ import type { Profile } from "@/types";
 export const profile: Profile = {
   handle: "NETRUNNER_M4LIK",
   realName: "Malik Oliver",
-  title: "Backend & AI Engineer",
+  title: "Python Backend / AI Engineer",
   location: "Indianapolis, IN",
   openToRelocation: "Chicago, IL",
   email: "malikoliver220@gmail.com",
@@ -11,7 +11,7 @@ export const profile: Profile = {
   github: "https://github.com/malikoliver25",
   linkedin: "https://linkedin.com/in/malik-o-1b4359115",
   summary:
-    "Backend & AI Engineer specializing in MLOps & AI Infrastructure — building production-grade APIs, agentic orchestration (LangGraph/MCP), and RAG pipelines deployed as observable, containerized services. Proficient in Python/FastAPI, Kubernetes, Docker, Terraform, vLLM and LangGraph. Ships resilient, low-latency systems for hybrid cloud and air-gapped edge (CMMC-compliant, zero-egress inference).",
+    "Agentic systems end to end: LangGraph/FastAPI microservices, RAG over Qdrant/ChromaDB, air-gapped LLM deployment on AWS. Ownership from architecture through security and CI/CD.",
   status: "ACTIVE",
   clearance: "LEVEL-5",
 };
