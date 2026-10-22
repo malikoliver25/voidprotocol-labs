@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-22T23:25:23.603Z",
+  "generatedAt": "2026-10-22T23:53:17.223Z",
   "source": "src/data/* + live GitHub (malikoliver25)",
   "note": "Derived — do not edit manually. Run node scripts/sync-github.mjs (or build-knowledge.mjs for site-only)",
   "knowledge": [
