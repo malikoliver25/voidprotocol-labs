@@ -55,6 +55,29 @@ test('desktop icons can be dragged to reorder', async ({ page }) => {
   );
   expect(nextIds.indexOf(second)).toBeLessThan(nextIds.indexOf(first));
 });
+test('desktop icons reorder via keyboard arrows', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForSelector('.os-icon', { timeout: 15000 });
+
+  const ids = await page.locator('.os-icon').evaluateAll((els) =>
+    els.map((el) => (el as HTMLElement).dataset.iconId)
+  );
+  const first = ids[0];
+  const second = ids[1];
+
+  // focus first icon
+  await page.locator('.os-icon').first().focus();
+  await page.waitForTimeout(100);
+
+  // ArrowRight should move focus and swap first with second
+  await page.keyboard.press('ArrowRight');
+  await page.waitForTimeout(150);
+
+  const nextIds = await page.locator('.os-icon').evaluateAll((els) =>
+    els.map((el) => (el as HTMLElement).dataset.iconId)
+  );
+  expect(nextIds.indexOf(second)).toBeLessThan(nextIds.indexOf(first));
+});
 
 test('drag is smooth: state commits every move, no snap-back', async ({ page }) => {
   await page.goto('/');

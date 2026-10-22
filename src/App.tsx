@@ -263,6 +263,55 @@ export default function App() {
     () => [...iconOrder].map((id) => WINDOW_DEFS.find((d) => d.id === id)!).filter(Boolean),
     [iconOrder]
   );
+  /* keyboard reorder for desktop icons — roving tabindex, arrow keys reorder */
+  const [focusedIconId, setFocusedIconId] = useState<string | null>(iconOrder[0] ?? null);
+
+  const iconCols = useMemo(() => {
+    const w = window.innerWidth;
+    if (w >= 1024) return 7;
+    if (w >= 640) return 4;
+    if (w >= 480) return 3;
+    return 3;
+  }, []);
+
+  const moveIconFocus = useCallback(
+    (id: string, dir: number) => {
+      if (!orderedDefs.length) return;
+      const idx = orderedDefs.findIndex((d) => d.id === id);
+      if (idx === -1) return;
+      const nextIdx = Math.max(0, Math.min(orderedDefs.length - 1, idx + dir));
+      const nextId = orderedDefs[nextIdx].id;
+      setFocusedIconId(nextId);
+      const el = document.querySelector<HTMLElement>(`[data-icon-id="${nextId}"]`);
+      el?.focus();
+    },
+    [orderedDefs]
+  );
+
+  const handleIconKeyDown = useCallback(
+    (e: React.KeyboardEvent, id: string) => {
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        moveIconFocus(id, -1);
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        moveIconFocus(id, 1);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        moveIconFocus(id, -iconCols);
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        moveIconFocus(id, iconCols);
+      } else if ((e.key === "Home" || e.key === "PageUp") && !e.shiftKey) {
+        e.preventDefault();
+        moveIconFocus(id, -(orderedDefs.length - 1));
+      } else if ((e.key === "End" || e.key === "PageDown") && !e.shiftKey) {
+        e.preventDefault();
+        moveIconFocus(id, orderedDefs.length - 1);
+      }
+    },
+    [orderedDefs, iconCols, focusedIconId]
+  );
   /* hero refs — targeted by the GSAP intro below */
   const menuBarRef = useRef<HTMLElement | null>(null);
   const desktopRef = useRef<HTMLElement | null>(null);
@@ -380,10 +429,14 @@ export default function App() {
         {/* icon grid — draggable to reorder */}
         <div className="relative z-10 mx-auto grid max-w-[1440px] grid-cols-3 gap-2 p-5 sm:grid-cols-4 sm:gap-4 sm:p-8 lg:grid-cols-7">
           {orderedDefs.map((d) => (
-            <button key={d.id} data-icon-id={d.id} onPointerDown={(e) => beginIconDrag(e, d.id)} onClick={() => wm.openWindow(d.id)} className="os-icon os-icon-grab"
-              aria-label={`Open ${d.title}`}>
-              <span className="text-[34px] leading-none text-phosphor glow-phosphor-soft sm:text-[40px]" aria-hidden="true">{d.icon}</span>
-              <span className="font-mono text-[12px] tracking-wider text-mist-soft">{d.title}</span>
+            <button key={d.id} data-icon-id={d.id}
+              tabIndex={focusedIconId === d.id ? 0 : -1}
+              onPointerDown={(e) => beginIconDrag(e, d.id)}
+              onKeyDown={(e) => handleIconKeyDown(e, d.id)}
+              onClick={() => wm.openWindow(d.id)}
+              className="os-icon os-icon-grab"
+              aria-label={`Open ${d.title}`}
+              aria-roledescription="desktop icon">
             </button>
           ))}
         </div>
